@@ -36,22 +36,22 @@ export function FunFactButton({ movieTitle }: { movieTitle: string }) {
   return (
     <Dialog onOpenChange={(open) => { if (!open) { setFact(''); setError(''); }}}>
       <DialogTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" className="rounded-full">
           <Sparkles className="mr-2 h-4 w-4" />
           Fun Fact
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]" onOpenAutoFocus={handleGetFact}>
+      <DialogContent className="sm:max-w-[425px] rounded-[2rem]" onOpenAutoFocus={handleGetFact}>
         <DialogHeader>
-          <DialogTitle>Fun Fact about {movieTitle}</DialogTitle>
+          <DialogTitle className="font-headline text-2xl">Fun Fact about {movieTitle}</DialogTitle>
         </DialogHeader>
-        <div className="min-h-[100px] flex items-center justify-center">
+        <div className="min-h-[100px] flex items-center justify-center px-2">
           {isLoading && <Loader2 className="h-8 w-8 animate-spin text-primary" />}
           {error && <p className="text-destructive text-center">{error}</p>}
-          {fact && <p className="text-center text-lg">{fact}</p>}
+          {fact && <p className="text-center text-base leading-relaxed">{fact}</p>}
         </div>
         <DialogFooter>
-          <Button onClick={handleGetFact} disabled={isLoading}>
+          <Button onClick={handleGetFact} disabled={isLoading} className="rounded-full">
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
             Get Another Fact
           </Button>
