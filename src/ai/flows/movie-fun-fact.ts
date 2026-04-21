@@ -1,5 +1,3 @@
-'use server';
-
 /**
  * @fileOverview Provides interesting and relevant fun facts or behind-the-scenes trivia about a movie.
  *

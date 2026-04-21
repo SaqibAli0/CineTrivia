@@ -1,8 +1,14 @@
 'use server';
 
-import { recommendMovie, RecommendMovieInput, RecommendMovieOutput } from '@/ai/flows/movie-recommendation';
-import { movieFunFact, MovieFunFactInput } from '@/ai/flows/movie-fun-fact';
-import { generateMoviePoster, GenerateMoviePosterInput } from '@/ai/flows/generate-movie-poster';
+import { recommendMovie } from '@/ai/flows/movie-recommendation';
+import { movieFunFact } from '@/ai/flows/movie-fun-fact';
+import { generateMoviePoster } from '@/ai/flows/generate-movie-poster';
+import { 
+  type RecommendMovieInput, 
+  type RecommendMovieOutput,
+  type MovieFunFactInput,
+  type GenerateMoviePosterInput
+} from '@/ai/types';
 
 export async function getMovieRecommendation(input: RecommendMovieInput): Promise<RecommendMovieOutput> {
   return await recommendMovie(input);

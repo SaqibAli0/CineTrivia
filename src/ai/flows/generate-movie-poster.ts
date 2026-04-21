@@ -1,5 +1,3 @@
-'use server';
-
 /**
  * @fileOverview Movie poster generation flow.
  *

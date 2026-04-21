@@ -1,5 +1,3 @@
-'use server';
-
 /**
  * @fileOverview AI-powered movie recommendation flow.
  *
