@@ -1,31 +1,30 @@
 'use server';
+
 /**
- * @fileOverview A flow to generate a movie poster image.
+ * @fileOverview Movie poster generation flow.
  *
- * - generateMoviePoster - A function that generates a movie poster.
- * - GenerateMoviePosterInput - The input type for the generateMoviePoster function.
- * - GenerateMoviePosterOutput - The return type for the generateMoviePoster function.
+ * Fetches real movie posters using Tavily Search API with fallback mechanisms.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {
+  GenerateMoviePosterInputSchema,
+  GenerateMoviePosterOutputSchema,
+  type GenerateMoviePosterInput,
+  type GenerateMoviePosterOutput,
+} from '@/ai/types';
+import {searchMoviePoster} from '@/ai/services/tavily';
 
-const GenerateMoviePosterInputSchema = z.object({
-  title: z.string().describe('The title of the movie.'),
-  description: z.string().describe('A brief description of the movie plot.'),
-  genre: z.string().describe('The genre of the movie.'),
-});
-export type GenerateMoviePosterInput = z.infer<typeof GenerateMoviePosterInputSchema>;
+export type {GenerateMoviePosterInput, GenerateMoviePosterOutput};
 
-const GenerateMoviePosterOutputSchema = z.object({
-  posterDataUri: z.string().describe('The generated movie poster as a data URI.'),
-});
-export type GenerateMoviePosterOutput = z.infer<typeof GenerateMoviePosterOutputSchema>;
-
+/**
+ * Generate movie poster by fetching real poster image
+ */
 export async function generateMoviePoster(input: GenerateMoviePosterInput): Promise<GenerateMoviePosterOutput> {
   return generateMoviePosterFlow(input);
 }
 
+// Flow definition
 const generateMoviePosterFlow = ai.defineFlow(
   {
     name: 'generateMoviePosterFlow',
@@ -33,24 +32,37 @@ const generateMoviePosterFlow = ai.defineFlow(
     outputSchema: GenerateMoviePosterOutputSchema,
   },
   async (input) => {
-    const { media } = await ai.generate({
-      model: 'googleai/gemini-2.0-flash-preview-image-generation',
-      prompt: `Generate a minimalist, artistic movie poster for a ${input.genre} film titled "${input.title}". The plot is: ${input.description}. The poster should be visually striking and capture the essence of the movie's theme. Avoid using any text on the poster.`,
-      config: {
-        responseModalities: ['TEXT', 'IMAGE'],
-        safetySettings: [
-          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-        ],
-      },
-    });
+    try {
+      // Search for movie poster using Tavily
+      const posterUrl = await searchMoviePoster(input.title);
 
-    if (!media?.url) {
-      throw new Error('Image generation failed.');
+      // Fetch and convert to base64
+      const posterDataUri = await fetchAndConvertToBase64(posterUrl);
+
+      return { posterDataUri };
+    } catch (error) {
+      console.error('Failed to fetch movie poster:', error);
+      throw new Error('Failed to fetch movie poster. Please try again later.');
     }
-
-    return { posterDataUri: media.url };
   }
 );
+
+/**
+ * Fetch image from URL and convert to base64 data URI
+ */
+async function fetchAndConvertToBase64(url: string): Promise<string> {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image: ${response.statusText}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const base64 = buffer.toString('base64');
+  const contentType = response.headers.get('content-type') || 'image/jpeg';
+
+  console.log(`Image fetched successfully: ${buffer.length} bytes`);
+
+  return `data:${contentType};base64,${base64}`;
+}
