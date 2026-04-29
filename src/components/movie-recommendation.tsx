@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "./ui/badge";
 import { StarRating } from "./star-rating";
 import { FunFactButton } from "./fun-fact-button";
+import { getPoster, savePoster } from "@/lib/indexeddb-poster";
 
 const formSchema = z.object({
   genres: z.array(z.string()).optional(),
@@ -95,6 +96,14 @@ export function MovieRecommendation() {
 
       setIsPosterLoading(true);
       try {
+        // Check IndexedDB first
+        const cachedPoster = await getPoster(result.title);
+        if (cachedPoster) {
+          setPosterUrl(cachedPoster);
+          return;
+        }
+
+        // Not in cache, fetch from API
         const posterResult = await getMoviePoster({
           title: result.title,
           description: result.description,
@@ -102,6 +111,8 @@ export function MovieRecommendation() {
         });
         if (posterResult.posterDataUri) {
           setPosterUrl(posterResult.posterDataUri);
+          // Save to IndexedDB for future use
+          await savePoster(result.title, posterResult.posterDataUri);
         }
       } catch (e) {
         console.error("Failed to generate poster for recommendation", e);

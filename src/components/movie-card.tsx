@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Movie } from "@/lib/movies";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "./star-rating";
@@ -10,6 +10,7 @@ import { FunFactButton } from "./fun-fact-button";
 import { getMoviePoster } from "@/app/actions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImageIcon } from "lucide-react";
+import { getPoster, savePoster } from "@/lib/indexeddb-poster";
 
 interface MovieCardProps {
   movie: Movie;
@@ -22,17 +23,53 @@ export function MovieCard({ movie }: MovieCardProps) {
 
   const needsPosterGeneration = movie.posterUrl.includes('placehold.co');
 
+  // Auto-generate poster on component mount if needed
+  useEffect(() => {
+    if (needsPosterGeneration && !dialogPosterUrl) {
+      setIsDialogPosterLoading(true);
+      getPoster(movie.title)
+        .then(async (cachedPoster) => {
+          if (cachedPoster) {
+            setDialogPosterUrl(cachedPoster);
+          } else {
+            try {
+              const result = await getMoviePoster({
+                title: movie.title,
+                description: movie.description,
+                genre: movie.genre,
+              });
+              if (result.posterDataUri) {
+                setDialogPosterUrl(result.posterDataUri);
+                await savePoster(movie.title, result.posterDataUri);
+              }
+            } catch (e) {
+              console.error("Failed to generate poster for", movie.title, e);
+            }
+          }
+        })
+        .finally(() => {
+          setIsDialogPosterLoading(false);
+        });
+    }
+  }, [movie.title, movie.description, movie.genre, needsPosterGeneration]);
+
   const handleOpenChange = async (open: boolean) => {
     if (open && needsPosterGeneration && !dialogPosterUrl) {
       setIsDialogPosterLoading(true);
       try {
-        const result = await getMoviePoster({
-          title: movie.title,
-          description: movie.description,
-          genre: movie.genre,
-        });
-        if (result.posterDataUri) {
-          setDialogPosterUrl(result.posterDataUri);
+        const cachedPoster = await getPoster(movie.title);
+        if (cachedPoster) {
+          setDialogPosterUrl(cachedPoster);
+        } else {
+          const result = await getMoviePoster({
+            title: movie.title,
+            description: movie.description,
+            genre: movie.genre,
+          });
+          if (result.posterDataUri) {
+            setDialogPosterUrl(result.posterDataUri);
+            await savePoster(movie.title, result.posterDataUri);
+          }
         }
       } catch (e) {
         console.error("Failed to generate poster for", movie.title, e);
@@ -55,17 +92,20 @@ export function MovieCard({ movie }: MovieCardProps) {
                 {genreLabel}
               </Badge>
             </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <ImageIcon className="w-12 h-12 text-muted-foreground opacity-50" />
-            </div>
-            {movie.posterUrl && !movie.posterUrl.includes('placehold.co') ? (
+            {isDialogPosterLoading ? (
+              <Skeleton className="h-full w-full" />
+            ) : dialogPosterUrl || (movie.posterUrl && !movie.posterUrl.includes('placehold.co')) ? (
               <Image
-                src={movie.posterUrl}
+                src={dialogPosterUrl || movie.posterUrl}
                 alt={`Poster for ${movie.title}`}
                 fill
                 className="object-cover"
               />
-            ) : null}
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <ImageIcon className="w-12 h-12 text-muted-foreground opacity-50" />
+              </div>
+            )}
           </div>
           <h3 className="font-headline text-xl md:text-2xl text-foreground mb-1 group-hover:text-primary transition-colors">
             {movie.title}
