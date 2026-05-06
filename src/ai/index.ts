@@ -1,8 +1,3 @@
-/**
- * AI Module
- * Centralized exports for all AI-related functionality
- */
-
 // Configuration
 export { ai, MODELS } from './config';
 
@@ -16,7 +11,8 @@ export { movieFunFact } from './flows/movie-fun-fact';
 
 // Services
 export { recommendationCache } from './services/recommendation-cache';
-export { tavilySearch, searchMoviePoster, searchMoviesByGenre } from './services/tavily';
+export { searchMoviePoster, searchMoviesByGenre } from './services/tavily';
+export { funFactCache, posterUrlCache, recommendationResponseCache } from './services/cache';
 
 // Utilities
 export { buildRecommendationPrompt, buildTavilyContext, buildExcludeList } from './utils/prompt-builder';

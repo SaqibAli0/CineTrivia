@@ -1,3 +1,13 @@
+/**
+ * Movie type definitions and utilities.
+ *
+ * Movies are now fetched dynamically from TMDB on each page load.
+ * This file only exports the shared Movie interface and a small
+ * fallback set used when TMDB is unreachable.
+ */
+
+import { TMDBMovie, getPosterUrl, getGenreLabel } from './tmdb';
+
 export interface Movie {
   id: number;
   title: string;
@@ -10,210 +20,68 @@ export interface Movie {
   director?: string;
 }
 
-export const movies: Movie[] = [
+/**
+ * Convert a TMDB movie object into our app's Movie shape
+ */
+export function toMovie(tmdb: TMDBMovie): Movie {
+  const year = tmdb.release_date ? parseInt(tmdb.release_date.split('-')[0], 10) : 0;
+  const rating = Math.round(tmdb.vote_average * 10) / 10;
+
+  return {
+    id: tmdb.id,
+    title: tmdb.title,
+    genre: getGenreLabel(tmdb.genre_ids),
+    year,
+    description: tmdb.overview || 'No description available.',
+    posterUrl: getPosterUrl(tmdb.poster_path, 'large'),
+    rating,
+    ageRating: 'PG-13', // TMDB doesn't include this in list endpoints
+  };
+}
+
+/**
+ * Minimal fallback collection shown when TMDB is unavailable.
+ * Keeps the page functional even if the API is down.
+ */
+export const fallbackMovies: Movie[] = [
   {
     id: 1,
     title: "Dune: Part One",
-    genre: "Sci-Fi / Epic",
+    genre: "Sci-Fi",
     year: 2021,
-    description: "A noble family becomes embroiled in a war for control over the galaxy's most precious resource while its heir begins to have visions of a dark future.",
-    posterUrl: "https://placehold.co/500x750.png",
+    description: "A noble family becomes embroiled in a war for control over the galaxy's most precious resource.",
+    posterUrl: "",
     rating: 8.0,
     ageRating: "PG-13",
-    director: "Denis Villeneuve",
   },
   {
     id: 2,
     title: "Parasite",
     genre: "Drama / Thriller",
     year: 2019,
-    description: "Greed and class discrimination threaten the newly formed symbiotic relationship between the wealthy Park family and the destitute Kim clan.",
-    posterUrl: "https://placehold.co/500x751.png",
+    description: "Greed and class discrimination threaten the newly formed symbiotic relationship between two families.",
+    posterUrl: "",
     rating: 8.6,
     ageRating: "R",
-    director: "Bong Joon Ho",
   },
   {
     id: 3,
-    title: "Her",
-    genre: "Romance / Sci-Fi",
-    year: 2013,
-    description: "In a near future, a lonely writer develops an unlikely relationship with an operating system designed to meet his every need.",
-    posterUrl: "https://placehold.co/500x752.png",
-    rating: 8.0,
-    ageRating: "R",
-    director: "Spike Jonze",
-  },
-  {
-    id: 4,
-    title: "Portrait of a Lady on Fire",
-    genre: "Historical / Drama",
-    year: 2019,
-    description: "On an isolated island in Brittany at the end of the eighteenth century, a female painter is obliged to paint a wedding portrait of a young woman.",
-    posterUrl: "https://placehold.co/500x753.png",
-    rating: 8.1,
-    ageRating: "R",
-    director: "Céline Sciamma",
-  },
-  {
-    id: 5,
-    title: "Forrest Gump",
-    genre: "Drama",
-    year: 1994,
-    description: "The presidencies of Kennedy and Johnson, the Vietnam War, and other historical events unfold from the perspective of an Alabama man with an IQ of 75.",
-    posterUrl: "https://placehold.co/500x754.png",
-    rating: 8.8,
-    ageRating: "PG-13",
-  },
-  {
-    id: 6,
-    title: "The Matrix",
-    genre: "Sci-Fi",
-    year: 1999,
-    description: "When a beautiful stranger leads computer hacker Neo to a forbidding underworld, he discovers the shocking truth--the life he knows is the elaborate deception of an evil cyber-intelligence.",
-    posterUrl: "https://placehold.co/500x755.png",
-    rating: 8.7,
-    ageRating: "R",
-  },
-  {
-    id: 7,
-    title: "Spirited Away",
-    genre: "Animation",
-    year: 2001,
-    description: "During her family's move to the suburbs, a sullen 10-year-old girl wanders into a world ruled by gods, witches, and spirits, and where humans are changed into beasts.",
-    posterUrl: "https://placehold.co/500x756.png",
-    rating: 8.6,
-    ageRating: "PG",
-  },
-  {
-    id: 8,
     title: "Inception",
     genre: "Sci-Fi / Thriller",
     year: 2010,
-    description: "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
-    posterUrl: "https://placehold.co/500x757.png",
+    description: "A thief who steals corporate secrets through dream-sharing technology is given the task of planting an idea.",
+    posterUrl: "",
     rating: 8.8,
     ageRating: "PG-13",
-    director: "Christopher Nolan",
   },
   {
-    id: 9,
-    title: "The Lord of the Rings: The Fellowship of the Ring",
-    genre: "Fantasy",
+    id: 4,
+    title: "Spirited Away",
+    genre: "Animation",
     year: 2001,
-    description: "A meek Hobbit from the Shire and eight companions set out on a journey to destroy the powerful One Ring and save Middle-earth from the Dark Lord Sauron.",
-    posterUrl: "https://placehold.co/500x758.png",
-    rating: 8.8,
-    ageRating: "PG-13",
-  },
-  {
-    id: 10,
-    title: "Fight Club",
-    genre: "Drama",
-    year: 1999,
-    description: "An insomniac office worker looking for a way to change his life crosses paths with a devil-may-care soap maker and they form an underground fight club that evolves into something much, much more.",
-    posterUrl: "https://placehold.co/500x759.png",
-    rating: 8.8,
-    ageRating: "R",
-  },
-  {
-    id: 11,
-    title: "Goodfellas",
-    genre: "Crime",
-    year: 1990,
-    description: "The story of Henry Hill and his life in the mob, covering his relationship with his wife Karen Hill and his mob partners Jimmy Conway and Tommy DeVito.",
-    posterUrl: "https://placehold.co/500x760.png",
-    rating: 8.7,
-    ageRating: "R",
-  },
-  {
-    id: 12,
-    title: "Interstellar",
-    genre: "Sci-Fi",
-    year: 2014,
-    description: "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
-    posterUrl: "https://placehold.co/500x761.png",
-    rating: 8.7,
-    ageRating: "PG-13",
-  },
-  {
-    id: 13,
-    title: "The Silence of the Lambs",
-    genre: "Thriller",
-    year: 1991,
-    description: "A young F.B.I. cadet must receive the help of an incarcerated and manipulative cannibal killer to help catch another serial killer.",
-    posterUrl: "https://placehold.co/500x762.png",
+    description: "A young girl wanders into a world ruled by gods, witches, and spirits.",
+    posterUrl: "",
     rating: 8.6,
-    ageRating: "R",
+    ageRating: "PG",
   },
-  {
-    id: 14,
-    title: "Saving Private Ryan",
-    genre: "War",
-    year: 1998,
-    description: "Following the Normandy Landings, a group of U.S. soldiers go behind enemy lines to retrieve a paratrooper whose brothers have been killed in action.",
-    posterUrl: "https://placehold.co/500x763.png",
-    rating: 8.6,
-    ageRating: "R",
-  },
-  {
-    id: 15,
-    title: "Gladiator",
-    genre: "Action",
-    year: 2000,
-    description: "A former Roman General sets out to exact vengeance against the corrupt emperor who murdered his family and sent him into slavery.",
-    posterUrl: "https://placehold.co/500x764.png",
-    rating: 8.5,
-    ageRating: "R",
-  },
-  {
-    id: 16,
-    title: "Django Unchained",
-    genre: "Western",
-    year: 2012,
-    description: "With the help of a German bounty-hunter, a freed slave sets out to rescue his wife from a brutal plantation-owner in Mississippi.",
-    posterUrl: "https://placehold.co/500x765.png",
-    rating: 8.4,
-    ageRating: "R",
-  },
-  {
-    id: 17,
-    title: "The Departed",
-    genre: "Crime",
-    year: 2006,
-    description: "An undercover cop and a mole in the police attempt to identify each other while infiltrating an Irish gang in South Boston.",
-    posterUrl: "https://placehold.co/500x766.png",
-    rating: 8.5,
-    ageRating: "R",
-  },
-  {
-    id: 18,
-    title: "Whiplash",
-    genre: "Drama",
-    year: 2014,
-    description: "A promising young drummer enrolls at a cut-throat music conservatory where his dreams of greatness are mentored by an instructor who will stop at nothing.",
-    posterUrl: "https://placehold.co/500x767.png",
-    rating: 8.5,
-    ageRating: "R",
-  },
-  {
-    id: 19,
-    title: "The Grand Budapest Hotel",
-    genre: "Comedy",
-    year: 2014,
-    description: "The adventures of Gustave H, a legendary concierge at a famous hotel from the fictional Republic of Zubrowka between the first and second World Wars.",
-    posterUrl: "https://placehold.co/500x768.png",
-    rating: 8.1,
-    ageRating: "R",
-  },
-  {
-    id: 20,
-    title: "Mad Max: Fury Road",
-    genre: "Action",
-    year: 2015,
-    description: "In a post-apocalyptic wasteland, a woman rebels against a tyrannical ruler in search for her homeland with the help of a group of female prisoners and a drifter named Max.",
-    posterUrl: "https://placehold.co/500x769.png",
-    rating: 8.1,
-    ageRating: "R",
-  }
 ];

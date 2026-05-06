@@ -1,8 +1,29 @@
+import { Suspense } from "react";
 import { Navbar } from "@/components/navbar";
 import { MovieRecommendation } from "@/components/movie-recommendation";
 import { MovieGrid } from "@/components/movie-grid";
+import { MovieGridSkeleton } from "@/components/movie-grid-skeleton";
 import { Footer } from "@/components/footer";
-import { movies } from "@/lib/movies";
+import { getMoviesFromPool } from "@/lib/movie-pool";
+import { toMovie, fallbackMovies } from "@/lib/movies";
+
+// Revalidate every hour — keeps TMDB usage well within free tier
+export const revalidate = 3600;
+
+async function MovieCollection() {
+  let movies = fallbackMovies;
+
+  try {
+    const poolMovies = await getMoviesFromPool(20);
+    if (poolMovies.length > 0) {
+      movies = poolMovies.map(toMovie);
+    }
+  } catch (error) {
+    console.error('Movie pool fetch failed, using fallback:', error);
+  }
+
+  return <MovieGrid movies={movies} />;
+}
 
 export default function Home() {
   return (
@@ -11,7 +32,9 @@ export default function Home() {
         <Navbar />
         <main className="space-y-16 md:space-y-24">
           <MovieRecommendation />
-          <MovieGrid movies={movies} />
+          <Suspense fallback={<MovieGridSkeleton />}>
+            <MovieCollection />
+          </Suspense>
         </main>
         <Footer />
       </div>

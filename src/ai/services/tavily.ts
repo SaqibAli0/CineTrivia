@@ -1,6 +1,8 @@
 /**
  * Tavily Search Service
- * Handles all interactions with Tavily Search API
+ *
+ * Used as a fallback for poster lookups and for providing
+ * real-time movie context to the recommendation flow.
  */
 
 const TAVILY_API_URL = 'https://api.tavily.com/search';
@@ -30,28 +32,24 @@ interface TavilyResponse {
   answer?: string;
 }
 
-/**
- * Search using Tavily API
- */
-export async function tavilySearch(options: TavilySearchOptions): Promise<TavilyResponse> {
-  const apiKey = process.env.TAVILY_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error('TAVILY_API_KEY environment variable is not configured');
+function getApiKey(): string {
+  const key = process.env.TAVILY_API_KEY;
+  if (!key) {
+    throw new Error('TAVILY_API_KEY is not configured');
   }
+  return key;
+}
 
+async function tavilySearch(options: TavilySearchOptions): Promise<TavilyResponse> {
   const response = await fetch(TAVILY_API_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      api_key: apiKey,
+      api_key: getApiKey(),
       query: options.query,
       search_depth: options.searchDepth || 'basic',
       include_images: options.includeImages || false,
       include_image_descriptions: options.includeImages || false,
-      include_image_url: options.includeImages || false,
       max_results: options.maxResults || 5,
     }),
   });
@@ -64,99 +62,60 @@ export async function tavilySearch(options: TavilySearchOptions): Promise<Tavily
 }
 
 /**
- * Search for movie posters
+ * Search for a movie poster image URL.
+ * Single attempt — no fallback search to save API calls.
  */
 export async function searchMoviePoster(movieTitle: string): Promise<string> {
-  console.log('Searching for movie poster:', movieTitle);
-
-  // Primary search
-  const searchData = await tavilySearch({
+  const data = await tavilySearch({
     query: `${movieTitle} movie poster official`,
-    maxResults: 10,
+    maxResults: 5,
     includeImages: true,
     searchDepth: 'basic',
   });
 
-  let posterUrl = extractPosterUrl(searchData);
-
-  // Fallback search if no poster found
-  if (!posterUrl) {
-    console.log('No poster found in primary search, trying fallback...');
-    const fallbackData = await tavilySearch({
-      query: `${movieTitle} film poster image`,
-      maxResults: 5,
-      includeImages: true,
-    });
-    
-    posterUrl = extractPosterUrl(fallbackData);
+  const url = extractPosterUrl(data);
+  if (!url) {
+    throw new Error('No poster found in Tavily results');
   }
 
-  if (!posterUrl) {
-    throw new Error('No poster image found in search results');
-  }
-
-  console.log('Found movie poster URL:', posterUrl);
-  return posterUrl;
+  return url;
 }
 
 /**
- * Extract poster URL from Tavily search results
+ * Search for movies by mood/genre to provide context for recommendations.
  */
+export async function searchMoviesByGenre(moodOrGenre: string): Promise<TavilyResult[]> {
+  const data = await tavilySearch({
+    query: `best ${moodOrGenre} movies highly rated recommendations`,
+    maxResults: 5,
+    searchDepth: 'basic',
+  });
+
+  return data.results || [];
+}
+
 function extractPosterUrl(data: TavilyResponse): string {
-  // Check images array
+  // Check images array first
   if (data.images && data.images.length > 0) {
-    console.log(`Found ${data.images.length} images in search`);
-    
     for (const image of data.images) {
-      const imageUrl = image.url || '';
-      const imageDesc = image.description || '';
-      const combined = (imageUrl + ' ' + imageDesc).toLowerCase();
-      
-      // Filter for actual posters, exclude behind-the-scenes
-      if (combined.includes('poster') && 
-          !combined.includes('behind the scenes') && 
-          !combined.includes('still')) {
-        console.log('Found poster in images array:', imageUrl);
-        return imageUrl;
+      const url = image.url || '';
+      const desc = (url + ' ' + (image.description || '')).toLowerCase();
+
+      if (desc.includes('poster') && !desc.includes('behind the scenes')) {
+        return url;
       }
     }
-    
-    // Use first image if no poster-specific found
+
+    // Use first image if nothing poster-specific
     if (data.images[0]?.url) {
-      console.log('Using first image from images array:', data.images[0].url);
       return data.images[0].url;
     }
   }
 
-  // Check results for img_url
-  if (data.results && data.results.length > 0) {
-    for (const result of data.results) {
-      if (result.img_url) {
-        console.log('Found poster in results:', result.img_url);
-        return result.img_url;
-      }
-    }
+  // Check result thumbnails
+  for (const result of data.results || []) {
+    if (result.img_url) return result.img_url;
   }
 
   return '';
-}
-
-/**
- * Search for movies by mood/genre
- */
-export async function searchMoviesByGenre(moodOrGenre: string): Promise<TavilyResult[]> {
-  console.log('Searching for movies with Tavily:', moodOrGenre);
-
-  const searchData = await tavilySearch({
-    query: `best ${moodOrGenre} movies 2020 2021 2022 2023 2024 top rated recommendations`,
-    maxResults: 10,
-    searchDepth: 'basic',
-  });
-
-  if (searchData.results && searchData.results.length > 0) {
-    console.log(`Found ${searchData.results.length} movies from Tavily search`);
-    return searchData.results;
-  }
-
-  return [];
 }

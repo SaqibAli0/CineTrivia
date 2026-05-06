@@ -1,16 +1,19 @@
 /**
- * @fileOverview Provides interesting and relevant fun facts or behind-the-scenes trivia about a movie.
+ * Movie Fun Fact Flow
  *
- * - movieFunFact - A function that generates movie fun facts.
- * - MovieFunFactInput - The input type for the movieFunFact function.
- * - MovieFunFactOutput - The return type for the movieFunFact function.
+ * Generates trivia about a movie using Gemini.
+ * Primary model with fallback if it fails.
+ * Results are cached by movie title so repeated requests
+ * for the same movie don't cost anything.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai, MODELS } from '@/ai/config';
+import { z } from 'genkit';
+import { funFactCache } from '@/ai/services/cache';
 
 const MovieFunFactInputSchema = z.object({
   movieTitle: z.string().describe('The title of the movie.'),
+  skipCache: z.boolean().optional().describe('If true, generate a fresh fact instead of returning cached.'),
 });
 export type MovieFunFactInput = z.infer<typeof MovieFunFactInputSchema>;
 
@@ -23,11 +26,20 @@ export async function movieFunFact(input: MovieFunFactInput): Promise<MovieFunFa
   return movieFunFactFlow(input);
 }
 
-const prompt = ai.definePrompt({
+const primaryPrompt = ai.definePrompt({
   name: 'movieFunFactPrompt',
-  input: {schema: MovieFunFactInputSchema},
-  output: {schema: MovieFunFactOutputSchema},
-  prompt: `You are a movie trivia expert. Generate one interesting and relevant fun fact or behind-the-scenes trivia about the movie "{{{movieTitle}}}".`,
+  input: { schema: MovieFunFactInputSchema },
+  output: { schema: MovieFunFactOutputSchema },
+  model: MODELS.PRIMARY,
+  prompt: `You are a movie trivia expert. Generate one interesting and relevant fun fact or behind-the-scenes trivia about the movie "{{{movieTitle}}}". Keep it concise — two to three sentences max.`,
+});
+
+const fallbackPrompt = ai.definePrompt({
+  name: 'movieFunFactFallbackPrompt',
+  input: { schema: MovieFunFactInputSchema },
+  output: { schema: MovieFunFactOutputSchema },
+  model: MODELS.FALLBACK,
+  prompt: `You are a movie trivia expert. Generate one interesting and relevant fun fact or behind-the-scenes trivia about the movie "{{{movieTitle}}}". Keep it concise — two to three sentences max.`,
 });
 
 const movieFunFactFlow = ai.defineFlow(
@@ -36,8 +48,33 @@ const movieFunFactFlow = ai.defineFlow(
     inputSchema: MovieFunFactInputSchema,
     outputSchema: MovieFunFactOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    const cacheKey = input.movieTitle.toLowerCase().trim();
+
+    // Return cached fact unless caller wants a fresh one
+    if (!input.skipCache) {
+      const cached = funFactCache.get(cacheKey);
+      if (cached) {
+        return { funFact: cached };
+      }
+    }
+
+    // Try primary model
+    try {
+      const { output } = await primaryPrompt(input);
+      if (output?.funFact) {
+        funFactCache.set(cacheKey, output.funFact);
+        return output;
+      }
+    } catch (error: any) {
+      console.error(`Fun fact primary model failed (${error.message}), trying fallback...`);
+    }
+
+    // Fallback model
+    const { output } = await fallbackPrompt(input);
+    const fact = output!.funFact;
+
+    funFactCache.set(cacheKey, fact);
+    return { funFact: fact };
   }
 );

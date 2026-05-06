@@ -1,16 +1,21 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Movie } from "@/lib/movies";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "./star-rating";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { FunFactButton } from "./fun-fact-button";
-import { getMoviePoster } from "@/app/actions";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ImageIcon } from "lucide-react";
-import { getPoster, savePoster } from "@/lib/indexeddb-poster";
 
 interface MovieCardProps {
   movie: Movie;
@@ -18,87 +23,27 @@ interface MovieCardProps {
 
 export function MovieCard({ movie }: MovieCardProps) {
   const [rating, setRating] = useState(Math.round(movie.rating / 2));
-  const [dialogPosterUrl, setDialogPosterUrl] = useState("");
-  const [isDialogPosterLoading, setIsDialogPosterLoading] = useState(false);
-
-  const needsPosterGeneration = movie.posterUrl.includes('placehold.co');
-
-  // Auto-generate poster on component mount if needed
-  useEffect(() => {
-    if (needsPosterGeneration && !dialogPosterUrl) {
-      setIsDialogPosterLoading(true);
-      getPoster(movie.title)
-        .then(async (cachedPoster) => {
-          if (cachedPoster) {
-            setDialogPosterUrl(cachedPoster);
-          } else {
-            try {
-              const result = await getMoviePoster({
-                title: movie.title,
-                description: movie.description,
-                genre: movie.genre,
-              });
-              if (result.posterDataUri) {
-                setDialogPosterUrl(result.posterDataUri);
-                await savePoster(movie.title, result.posterDataUri);
-              }
-            } catch (e) {
-              console.error("Failed to generate poster for", movie.title, e);
-            }
-          }
-        })
-        .finally(() => {
-          setIsDialogPosterLoading(false);
-        });
-    }
-  }, [movie.title, movie.description, movie.genre, needsPosterGeneration]);
-
-  const handleOpenChange = async (open: boolean) => {
-    if (open && needsPosterGeneration && !dialogPosterUrl) {
-      setIsDialogPosterLoading(true);
-      try {
-        const cachedPoster = await getPoster(movie.title);
-        if (cachedPoster) {
-          setDialogPosterUrl(cachedPoster);
-        } else {
-          const result = await getMoviePoster({
-            title: movie.title,
-            description: movie.description,
-            genre: movie.genre,
-          });
-          if (result.posterDataUri) {
-            setDialogPosterUrl(result.posterDataUri);
-            await savePoster(movie.title, result.posterDataUri);
-          }
-        }
-      } catch (e) {
-        console.error("Failed to generate poster for", movie.title, e);
-        setDialogPosterUrl(movie.posterUrl);
-      } finally {
-        setIsDialogPosterLoading(false);
-      }
-    }
-  };
-
-  const genreLabel = movie.genre.toUpperCase();
+  const hasPoster = Boolean(movie.posterUrl);
 
   return (
-    <Dialog onOpenChange={handleOpenChange}>
+    <Dialog>
       <DialogTrigger asChild>
         <div className="group cursor-pointer">
           <div className="relative aspect-[3/4] rounded-3xl overflow-hidden bg-muted mb-5">
             <div className="absolute top-4 left-4 z-10">
-              <Badge variant="secondary" className="bg-background/90 text-[10px] tracking-wider font-medium uppercase px-3 py-1 rounded-full border-0">
-                {genreLabel}
+              <Badge
+                variant="secondary"
+                className="bg-background/90 text-[10px] tracking-wider font-medium uppercase px-3 py-1 rounded-full border-0"
+              >
+                {movie.genre.toUpperCase()}
               </Badge>
             </div>
-            {isDialogPosterLoading ? (
-              <Skeleton className="h-full w-full" />
-            ) : dialogPosterUrl || (movie.posterUrl && !movie.posterUrl.includes('placehold.co')) ? (
+            {hasPoster ? (
               <Image
-                src={dialogPosterUrl || movie.posterUrl}
+                src={movie.posterUrl}
                 alt={`Poster for ${movie.title}`}
                 fill
+                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 className="object-cover"
               />
             ) : (
@@ -124,19 +69,21 @@ export function MovieCard({ movie }: MovieCardProps) {
           </p>
         </div>
       </DialogTrigger>
+
       <DialogContent className="sm:max-w-3xl grid grid-cols-1 md:grid-cols-[2fr_3fr] gap-10 p-0 overflow-hidden rounded-[2rem] border-0 bg-card">
         <div className="aspect-[2/3] relative w-full overflow-hidden bg-muted">
-          {isDialogPosterLoading ? (
-            <Skeleton className="h-full w-full" />
-          ) : (
+          {hasPoster ? (
             <Image
-              src={dialogPosterUrl || movie.posterUrl}
+              src={movie.posterUrl}
               alt={`Poster for ${movie.title}`}
               fill
               sizes="(max-width: 768px) 90vw, 40vw"
               className="object-cover"
-              data-ai-hint={`${movie.genre} movie poster`}
             />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <ImageIcon className="w-16 h-16 text-muted-foreground opacity-40" />
+            </div>
           )}
         </div>
         <div className="flex flex-col p-8 md:pl-0 md:py-8 md:pr-8">
@@ -155,7 +102,10 @@ export function MovieCard({ movie }: MovieCardProps) {
           <div className="flex items-center gap-5 mb-8">
             <StarRating initialRating={rating} onRate={setRating} totalStars={5} />
             <div className="h-4 w-px bg-border" />
-            <span className="font-bold text-lg text-primary">{movie.rating.toFixed(1)}<span className="text-muted-foreground font-normal">/10</span></span>
+            <span className="font-bold text-lg text-primary">
+              {movie.rating.toFixed(1)}
+              <span className="text-muted-foreground font-normal">/10</span>
+            </span>
           </div>
 
           <DialogFooter className="mt-auto flex justify-start sm:justify-start pt-6 border-t border-border/40">

@@ -1,28 +1,33 @@
 /**
- * @fileOverview Movie poster generation flow.
+ * Movie Poster Flow
  *
- * Fetches real movie posters using Tavily Search API with fallback mechanisms.
+ * Finds a poster URL for a given movie title.
+ * Strategy:
+ *   1. Check server-side cache
+ *   2. Search TMDB by title (free)
+ *   3. Fall back to Tavily search (paid, last resort)
+ *
+ * Returns a URL string instead of base64 to avoid
+ * sending hundreds of KB over the wire.
  */
 
-import {ai} from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import {
   GenerateMoviePosterInputSchema,
   GenerateMoviePosterOutputSchema,
   type GenerateMoviePosterInput,
   type GenerateMoviePosterOutput,
 } from '@/ai/types';
-import {searchMoviePoster} from '@/ai/services/tavily';
+import { searchMovie, getPosterUrl } from '@/lib/tmdb';
+import { searchMoviePoster } from '@/ai/services/tavily';
+import { posterUrlCache } from '@/ai/services/cache';
 
-export type {GenerateMoviePosterInput, GenerateMoviePosterOutput};
+export type { GenerateMoviePosterInput, GenerateMoviePosterOutput };
 
-/**
- * Generate movie poster by fetching real poster image
- */
 export async function generateMoviePoster(input: GenerateMoviePosterInput): Promise<GenerateMoviePosterOutput> {
   return generateMoviePosterFlow(input);
 }
 
-// Flow definition
 const generateMoviePosterFlow = ai.defineFlow(
   {
     name: 'generateMoviePosterFlow',
@@ -30,37 +35,36 @@ const generateMoviePosterFlow = ai.defineFlow(
     outputSchema: GenerateMoviePosterOutputSchema,
   },
   async (input) => {
-    try {
-      // Search for movie poster using Tavily
-      const posterUrl = await searchMoviePoster(input.title);
+    const cacheKey = input.title.toLowerCase().trim();
 
-      // Fetch and convert to base64
-      const posterDataUri = await fetchAndConvertToBase64(posterUrl);
-
-      return { posterDataUri };
-    } catch (error) {
-      console.error('Failed to fetch movie poster:', error);
-      throw new Error('Failed to fetch movie poster. Please try again later.');
+    // 1. Check cache
+    const cached = posterUrlCache.get(cacheKey);
+    if (cached) {
+      return { posterDataUri: cached };
     }
+
+    // 2. Try TMDB (free)
+    try {
+      const tmdbResult = await searchMovie(input.title);
+      if (tmdbResult?.poster_path) {
+        const url = getPosterUrl(tmdbResult.poster_path, 'large');
+        posterUrlCache.set(cacheKey, url);
+        return { posterDataUri: url };
+      }
+    } catch (error) {
+      console.error('TMDB poster search failed:', error);
+    }
+
+    // 3. Fall back to Tavily (paid)
+    try {
+      const tavilyUrl = await searchMoviePoster(input.title);
+      posterUrlCache.set(cacheKey, tavilyUrl);
+      return { posterDataUri: tavilyUrl };
+    } catch (error) {
+      console.error('Tavily poster search failed:', error);
+    }
+
+    // No poster found — return empty string, UI will show placeholder
+    return { posterDataUri: '' };
   }
 );
-
-/**
- * Fetch image from URL and convert to base64 data URI
- */
-async function fetchAndConvertToBase64(url: string): Promise<string> {
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch image: ${response.statusText}`);
-  }
-
-  const arrayBuffer = await response.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-  const base64 = buffer.toString('base64');
-  const contentType = response.headers.get('content-type') || 'image/jpeg';
-
-  console.log(`Image fetched successfully: ${buffer.length} bytes`);
-
-  return `data:${contentType};base64,${base64}`;
-}

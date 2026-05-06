@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  font-family: Inter, Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), Inter, Arial, Helvetica, sans-serif;
 }
 
 @layer base {
@@ -63,10 +63,10 @@ body {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --rec-surface: 30 20% 95%;
-    --rec-text: 30 15% 12%;
-    --rec-muted: 30 8% 45%;
-    --rec-border: 30 15% 85%;
+    --rec-surface: 30 6% 16%;
+    --rec-text: 30 10% 96%;
+    --rec-muted: 30 5% 55%;
+    --rec-border: 30 6% 22%;
   }
 }
 

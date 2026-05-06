@@ -1,6 +1,9 @@
 /**
- * Prompt Builder Utilities
- * Helper functions for constructing AI prompts
+ * Prompt Builder
+ *
+ * Constructs the system prompt for movie recommendations
+ * using optional Tavily search context and an exclusion list
+ * of recently recommended titles.
  */
 
 import { TavilyResult } from '../services/tavily';
@@ -10,46 +13,33 @@ interface PromptContext {
   excludeList?: string[];
 }
 
-/**
- * Build context string from Tavily search results
- */
 export function buildTavilyContext(results: TavilyResult[]): string {
   if (results.length === 0) return '';
 
-  const movieList = results
-    .map((movie, index) => `${index + 1}. ${movie.title} - ${movie.content}`)
+  const list = results
+    .map((r, i) => `${i + 1}. ${r.title} — ${r.content}`)
     .join('\n');
 
-  return `Here are some real movies found from search results:\n${movieList}\n\n`;
+  return `Here are some real movies from recent search results:\n${list}\n\n`;
 }
 
-/**
- * Build exclusion list string
- */
 export function buildExcludeList(movies: string[]): string {
   if (movies.length === 0) return '';
-
-  return `\nIMPORTANT: Do NOT recommend any of these movies (already recommended recently): ${movies.join(', ')}\n`;
+  return `\nDo NOT recommend any of these (already suggested): ${movies.join(', ')}\n`;
 }
 
-/**
- * Build complete prompt for movie recommendation
- */
 export function buildRecommendationPrompt(context: PromptContext): string {
   const tavilyContext = buildTavilyContext(context.tavilyResults || []);
   const excludeList = buildExcludeList(context.excludeList || []);
-  const tavilyMention = context.tavilyResults && context.tavilyResults.length > 0 
-    ? ' and the search results above' 
-    : '';
+  const hasContext = (context.tavilyResults?.length || 0) > 0;
 
-  return `You are a movie expert. Recommend ONE excellent movie based on the specified mood or genre.
+  return `You are a movie expert. Recommend ONE excellent movie based on the user's mood or genre preference.
 
-${tavilyContext}Based on the user's preference${tavilyMention}, choose the best movie recommendation.
+${tavilyContext}${hasContext ? 'You may pick from the search results above or recommend any other great movie that fits.' : 'Recommend any excellent movie that fits the criteria.'}
 
-If search results are provided, you can pick from them OR recommend any other excellent movie that fits the criteria.
-Provide accurate information including the real title, year, genre, a compelling description, rating out of 10, and age rating.
+Provide accurate information: real title, correct year, genre, a compelling 2-3 sentence description, rating out of 10, and age rating.
 ${excludeList}
-Make sure to recommend a DIFFERENT movie each time. Be creative and varied in your recommendations.
+Recommend a DIFFERENT movie each time. Be creative.
 
 Mood or Genre: {{{moodOrGenre}}}
 `;

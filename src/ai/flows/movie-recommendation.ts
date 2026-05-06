@@ -1,32 +1,29 @@
 /**
- * @fileOverview AI-powered movie recommendation flow.
+ * Movie Recommendation Flow
  *
- * Uses Tavily Search API for real-time movie data and Gemini AI for intelligent selection.
- * Implements fallback mechanism from Gemini 2.5 Flash to Flash-Lite for reliability.
+ * Uses Tavily for real-time movie context and Gemini Flash-Lite
+ * for intelligent selection. Caches responses by input to avoid
+ * repeated API calls for the same mood/genre.
  */
 
-import {ai, MODELS} from '@/ai/config';
+import { ai, MODELS } from '@/ai/config';
 import {
   RecommendMovieInputSchema,
   RecommendMovieOutputSchema,
   type RecommendMovieInput,
   type RecommendMovieOutput,
 } from '@/ai/types';
-import {searchMoviesByGenre} from '@/ai/services/tavily';
-import {recommendationCache} from '@/ai/services/recommendation-cache';
-import {buildRecommendationPrompt} from '@/ai/utils/prompt-builder';
-import {z} from 'genkit';
+import { searchMoviesByGenre } from '@/ai/services/tavily';
+import { recommendationCache } from '@/ai/services/recommendation-cache';
+import { recommendationResponseCache, ONE_HOUR } from '@/ai/services/cache';
+import { buildRecommendationPrompt } from '@/ai/utils/prompt-builder';
 
-export type {RecommendMovieInput, RecommendMovieOutput};
+export type { RecommendMovieInput, RecommendMovieOutput };
 
-/**
- * Get movie recommendation based on mood or genre
- */
 export async function recommendMovie(input: RecommendMovieInput): Promise<RecommendMovieOutput> {
   return recommendMovieFlow(input);
 }
 
-// Flow definition
 const recommendMovieFlow = ai.defineFlow(
   {
     name: 'recommendMovieFlow',
@@ -34,77 +31,74 @@ const recommendMovieFlow = ai.defineFlow(
     outputSchema: RecommendMovieOutputSchema,
   },
   async (input) => {
-    // Fetch real movie data from Tavily
+    const cacheKey = input.moodOrGenre.toLowerCase().trim();
+
+    // Check response cache first
+    const cached = recommendationResponseCache.get(cacheKey);
+    if (cached) {
+      return cached as RecommendMovieOutput;
+    }
+
+    // Fetch context from Tavily (reduced to 5 results)
     const tavilyResults = await fetchMovieData(input.moodOrGenre);
 
-    // Build prompt with context
+    // Build prompt
     const prompt = buildRecommendationPrompt({
       tavilyResults,
       excludeList: recommendationCache.getRecentMovies(),
     });
 
-    // Generate recommendation with fallback
+    // Generate with fallback
     const output = await generateWithFallback(prompt, input);
 
-    // Cache the recommendation
-    if (output) {
-      recommendationCache.add(output.title, output.year);
-      console.log(`Recommendation cached. Total tracked: ${recommendationCache.getSize()}`);
-    }
+    // Track in dedup cache
+    recommendationCache.add(output.title, output.year);
+
+    // Cache the full response for 1 hour
+    recommendationResponseCache.set(cacheKey, output, ONE_HOUR);
 
     return output;
   }
 );
 
-/**
- * Fetch movie data from Tavily Search API
- */
 async function fetchMovieData(moodOrGenre: string) {
   try {
     return await searchMoviesByGenre(moodOrGenre);
   } catch (error) {
-    console.log('Tavily search failed, proceeding with Gemini only:', error);
+    console.error('Tavily search failed, continuing without context:', error);
     return [];
   }
 }
 
-/**
- * Generate recommendation with primary model, fallback to lite if needed
- */
-async function generateWithFallback(prompt: string, input: RecommendMovieInput): Promise<RecommendMovieOutput> {
+async function generateWithFallback(
+  prompt: string,
+  input: RecommendMovieInput
+): Promise<RecommendMovieOutput> {
   // Try primary model first
   try {
-    const promptFn = createPromptFunction(prompt, MODELS.PRIMARY);
+    const promptFn = createPrompt(prompt, MODELS.PRIMARY);
     const result = await promptFn(input);
-    
-    if (result.output) {
-      console.log(`Generated with ${MODELS.PRIMARY}:`, result.output.title);
-      return result.output;
-    }
+    if (result.output) return result.output;
   } catch (error: any) {
-    console.log(`Primary model failed (${error.message}), using fallback...`);
+    console.error(`Primary model failed (${error.message}), trying fallback...`);
   }
 
   // Fallback to lite model
-  const fallbackPromptFn = createPromptFunction(prompt, MODELS.FALLBACK);
-  const result = await fallbackPromptFn(input);
+  const fallbackFn = createPrompt(prompt, MODELS.FALLBACK);
+  const result = await fallbackFn(input);
 
   if (!result.output) {
     throw new Error('Failed to generate movie recommendation');
   }
 
-  console.log(`Generated with ${MODELS.FALLBACK} (fallback):`, result.output.title);
   return result.output;
 }
 
-/**
- * Create a prompt function with specific model
- */
-function createPromptFunction(prompt: string, model: string) {
+function createPrompt(prompt: string, model: string) {
   return ai.definePrompt({
     name: `movieRecommendation_${Date.now()}`,
-    input: {schema: RecommendMovieInputSchema},
-    output: {schema: RecommendMovieOutputSchema},
+    input: { schema: RecommendMovieInputSchema },
+    output: { schema: RecommendMovieOutputSchema },
     prompt,
     model,
   });

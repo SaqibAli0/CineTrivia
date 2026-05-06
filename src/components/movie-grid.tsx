@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import type { Movie } from "@/lib/movies";
 import { MovieCard } from "./movie-card";
-import { Search } from "lucide-react";
+import { Search, Film } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 interface MovieGridProps {
@@ -15,17 +15,18 @@ export function MovieGrid({ movies }: MovieGridProps) {
 
   const filteredMovies = useMemo(() => {
     if (!searchQuery) return movies;
+    const q = searchQuery.toLowerCase();
     return movies.filter(
       (movie) =>
-        movie.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        movie.genre.toLowerCase().includes(searchQuery.toLowerCase())
+        movie.title.toLowerCase().includes(q) ||
+        movie.genre.toLowerCase().includes(q)
     );
   }, [movies, searchQuery]);
 
   return (
     <div className="space-y-10">
       <div>
-        <h2 id="movie-grid-heading" className="font-headline text-3xl md:text-4xl text-foreground mb-2">
+        <h2 className="font-headline text-3xl md:text-4xl text-foreground mb-2">
           Explore Our Collection
         </h2>
         <p className="text-muted-foreground text-sm">
@@ -51,10 +52,16 @@ export function MovieGrid({ movies }: MovieGridProps) {
             <MovieCard key={movie.id} movie={movie} />
           ))}
         </div>
+      ) : movies.length === 0 ? (
+        <div className="text-center py-16 space-y-3">
+          <Film className="w-12 h-12 text-muted-foreground mx-auto opacity-50" />
+          <p className="text-lg font-medium text-foreground">Collection loading...</p>
+          <p className="text-muted-foreground text-sm">Movies will appear here shortly.</p>
+        </div>
       ) : (
         <div className="text-center py-16">
-          <p className="text-lg font-semibold">No movies found</p>
-          <p className="text-muted-foreground">Try a different search term.</p>
+          <p className="text-lg font-medium text-foreground">No movies found</p>
+          <p className="text-muted-foreground text-sm">Try a different search term.</p>
         </div>
       )}
     </div>

@@ -36,6 +36,7 @@ export type GenerateMoviePosterOutput = z.infer<typeof GenerateMoviePosterOutput
 // Movie fun fact schemas
 export const MovieFunFactInputSchema = z.object({
   movieTitle: z.string().describe('The title of the movie to get a fun fact about.'),
+  skipCache: z.boolean().optional().describe('If true, generate a fresh fact.'),
 });
 
 export type MovieFunFactInput = z.infer<typeof MovieFunFactInputSchema>;

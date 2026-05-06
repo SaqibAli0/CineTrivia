@@ -7,8 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogDescription,
-  DialogFooter
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { getMovieFunFact } from "@/app/actions";
@@ -18,23 +17,25 @@ export function FunFactButton({ movieTitle }: { movieTitle: string }) {
   const [fact, setFact] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   const handleGetFact = async () => {
     setIsLoading(true);
     setFact("");
     setError("");
     try {
-      const result = await getMovieFunFact({ movieTitle });
+      const result = await getMovieFunFact({ movieTitle, skipCache: hasLoadedOnce });
       setFact(result.funFact);
-    } catch (e) {
-      setError("Could not fetch a fun fact. Please try again later.");
+      setHasLoadedOnce(true);
+    } catch (e: any) {
+      setError(e.message || "Could not fetch a fun fact. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Dialog onOpenChange={(open) => { if (!open) { setFact(''); setError(''); }}}>
+    <Dialog onOpenChange={(open) => { if (!open) { setFact(""); setError(""); setHasLoadedOnce(false); } }}>
       <DialogTrigger asChild>
         <Button variant="outline" className="rounded-full">
           <Sparkles className="mr-2 h-4 w-4" />
@@ -47,7 +48,7 @@ export function FunFactButton({ movieTitle }: { movieTitle: string }) {
         </DialogHeader>
         <div className="min-h-[100px] flex items-center justify-center px-2">
           {isLoading && <Loader2 className="h-8 w-8 animate-spin text-primary" />}
-          {error && <p className="text-destructive text-center">{error}</p>}
+          {error && <p className="text-destructive text-center text-sm">{error}</p>}
           {fact && <p className="text-center text-base leading-relaxed">{fact}</p>}
         </div>
         <DialogFooter>
