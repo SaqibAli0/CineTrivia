@@ -42,9 +42,9 @@ export function FunFactButton({ movieTitle }: { movieTitle: string }) {
           Fun Fact
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] rounded-[2rem]" onOpenAutoFocus={handleGetFact}>
+      <DialogContent className="max-w-[90vw] sm:max-w-[425px] rounded-2xl sm:rounded-[2rem]" onOpenAutoFocus={handleGetFact}>
         <DialogHeader>
-          <DialogTitle className="font-headline text-2xl">Fun Fact about {movieTitle}</DialogTitle>
+          <DialogTitle className="font-headline text-xl sm:text-2xl">Fun Fact about {movieTitle}</DialogTitle>
         </DialogHeader>
         <div className="min-h-[100px] flex items-center justify-center px-2">
           {isLoading && <Loader2 className="h-8 w-8 animate-spin text-primary" />}

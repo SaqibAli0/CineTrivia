@@ -52,7 +52,7 @@ function shuffle<T>(arr: T[]): T[] {
  * - If pool has 100 movies → shuffle and pick 20 (no API call)
  * - If pool is under 100 → fetch more from TMDB, add to pool, then pick 20
  */
-export async function getMoviesFromPool(count: number = 20): Promise<TMDBMovie[]> {
+export async function getMoviesFromPool(count: number = 40): Promise<TMDBMovie[]> {
   let pool = getPool();
 
   // Pool is full — just shuffle and return
@@ -60,9 +60,12 @@ export async function getMoviesFromPool(count: number = 20): Promise<TMDBMovie[]
     return shuffle(pool.movies).slice(0, count);
   }
 
-  // Pool needs more movies
+  // Pool needs more movies — fetch multiple pages to fill quicker
   try {
-    const fresh = await getMovieCollection(20);
+    const fetches = [getMovieCollection(20), getMovieCollection(20)];
+    const results = await Promise.all(fetches);
+    const fresh = results.flat();
+
     const existing = pool ? new Map(pool.movies.map((m) => [m.id, m])) : new Map<number, TMDBMovie>();
 
     for (const movie of fresh) {
@@ -73,8 +76,6 @@ export async function getMoviesFromPool(count: number = 20): Promise<TMDBMovie[]
 
     const all = Array.from(existing.values());
     const isFull = all.length >= POOL_TARGET;
-
-    // Trim to target if we somehow got more
     const trimmed = all.slice(0, POOL_TARGET);
 
     pool = { movies: trimmed, isFull };
@@ -84,7 +85,6 @@ export async function getMoviesFromPool(count: number = 20): Promise<TMDBMovie[]
   } catch (error) {
     console.error('Failed to fetch movies for pool:', error);
 
-    // Use whatever we have
     if (pool && pool.movies.length > 0) {
       return shuffle(pool.movies).slice(0, count);
     }

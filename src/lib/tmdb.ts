@@ -109,12 +109,6 @@ function randomInt(min: number, max: number): number {
  * Fetch movies from a TMDB endpoint
  */
 async function fetchFromTMDB(endpoint: string, params: Record<string, string> = {}): Promise<TMDBResponse> {
-  // In dev mode, check file cache to avoid burning TMDB quota
-  const { getDevCache, setDevCache } = await import('./dev-cache');
-  const cacheKey = `tmdb_${endpoint}_${JSON.stringify(params)}`;
-  const cached = getDevCache<TMDBResponse>(cacheKey);
-  if (cached) return cached;
-
   const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
   url.searchParams.set('api_key', getApiKey());
   url.searchParams.set('language', 'en-US');
@@ -129,9 +123,7 @@ async function fetchFromTMDB(endpoint: string, params: Record<string, string> = 
     throw new Error(`TMDB request failed: ${response.status} ${response.statusText}`);
   }
 
-  const data: TMDBResponse = await response.json();
-  setDevCache(cacheKey, data);
-  return data;
+  return response.json();
 }
 
 /**
