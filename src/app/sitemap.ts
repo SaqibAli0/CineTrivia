@@ -3,6 +3,9 @@ import { getPopularMoviesList } from '@/lib/tmdb-details';
 import { getAllPosts } from '@/lib/blog';
 import { GENRES } from '@/lib/genres';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 86400; // revalidate once per day
+
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
