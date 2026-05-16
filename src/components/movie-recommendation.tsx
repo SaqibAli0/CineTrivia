@@ -10,19 +10,12 @@ import type { RecommendMovieOutput } from "@/ai/types";
 import { Button } from "@/components/ui/button";
 import { Form, FormField, FormItem } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Loader2, Sparkles, ImageIcon, Check, History, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { StarRating } from "./star-rating";
 import { FunFactButton } from "./fun-fact-button";
 import { getHistory, addToHistory, type HistoryEntry } from "@/lib/history";
+import { toSlug } from "@/lib/slug";
+import Link from "next/link";
 
 const formSchema = z.object({
   genres: z.array(z.string()).optional(),
@@ -47,7 +40,6 @@ export function MovieRecommendation() {
   const [posterUrl, setPosterUrl] = useState("");
   const [isPosterLoading, setIsPosterLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [rating, setRating] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const { toast } = useToast();
@@ -166,8 +158,6 @@ export function MovieRecommendation() {
     setPosterUrl(entry.posterUrl);
     setShowHistory(false);
   }
-
-  const displayRating = recommendation ? Math.round((recommendation.rating || 0) / 2) : 0;
 
   return (
     <section className="py-6 sm:py-8 md:py-12">
@@ -328,103 +318,56 @@ export function MovieRecommendation() {
 
           {/* Recommendation result */}
           {recommendation && !showHistory && (
-            <Dialog>
-              <div className="bg-[hsl(var(--rec-surface))] rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 md:p-8 relative">
-                <div className="mb-3 sm:mb-4">
-                  <p className="text-[11px] tracking-widest uppercase text-[hsl(var(--rec-muted))]">Recommended</p>
+            <div className="bg-[hsl(var(--rec-surface))] rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 md:p-8 relative">
+              <div className="mb-3 sm:mb-4">
+                <p className="text-[11px] tracking-widest uppercase text-[hsl(var(--rec-muted))]">Recommended</p>
+              </div>
+
+              <div className="flex gap-3 sm:gap-5 items-start">
+                <div className="w-1/4 shrink-0 aspect-[2/3] relative rounded-lg sm:rounded-xl bg-[hsl(var(--rec-border))] overflow-hidden">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <ImageIcon className="w-5 h-5 sm:w-8 sm:h-8 text-[hsl(var(--rec-muted))] opacity-40" />
+                  </div>
+                  {isPosterLoading ? (
+                    <Skeleton className="absolute inset-0" />
+                  ) : posterUrl ? (
+                    <Image src={posterUrl} alt={recommendation.title} fill className="object-cover" />
+                  ) : null}
                 </div>
 
-                <div className="flex gap-3 sm:gap-5 items-start">
-                  <div className="w-1/4 shrink-0 aspect-[2/3] relative rounded-lg sm:rounded-xl bg-[hsl(var(--rec-border))] overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <ImageIcon className="w-5 h-5 sm:w-8 sm:h-8 text-[hsl(var(--rec-muted))] opacity-40" />
-                    </div>
-                    {isPosterLoading ? (
-                      <Skeleton className="absolute inset-0" />
-                    ) : posterUrl ? (
-                      <Image src={posterUrl} alt={recommendation.title} fill className="object-cover" />
-                    ) : null}
-                  </div>
-
-                  <div className="flex-1 min-w-0 flex flex-col justify-center self-center">
-                    <h2 className="font-headline text-xl sm:text-3xl md:text-4xl lg:text-5xl text-[hsl(var(--rec-text))] leading-[1.05] mb-2 sm:mb-4 tracking-tight">
-                      {recommendation.title}
-                    </h2>
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 text-[10px] sm:text-[11px] tracking-widest uppercase text-[hsl(var(--rec-muted))]">
-                      <span>{recommendation.year}</span>
-                      <span>•</span>
-                      <span>{recommendation.genre}</span>
-                      <span>•</span>
-                      <span>{recommendation.ageRating || "PG-13"}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 sm:mt-5">
-                  <p className="text-xs sm:text-sm md:text-base text-[hsl(var(--rec-muted))] leading-relaxed mb-4 sm:mb-5 line-clamp-3 sm:line-clamp-4">
-                    {recommendation.description}
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                    <DialogTrigger asChild>
-                      <Button className="bg-[hsl(var(--rec-text))] text-[hsl(var(--rec-surface))] hover:bg-[hsl(var(--rec-text))]/80 rounded-full px-4 sm:px-5 py-2 sm:py-2.5 h-auto text-xs sm:text-sm font-medium">
-                        View Details
-                      </Button>
-                    </DialogTrigger>
-                    <span className="text-xs sm:text-sm font-semibold text-[hsl(var(--rec-text))]">
-                      {recommendation.rating?.toFixed(1) || "8.5"}
-                      <span className="text-[hsl(var(--rec-muted))] font-normal"> /10</span>
-                    </span>
+                <div className="flex-1 min-w-0 flex flex-col justify-center self-center">
+                  <h2 className="font-headline text-xl sm:text-3xl md:text-4xl lg:text-5xl text-[hsl(var(--rec-text))] leading-[1.05] mb-2 sm:mb-4 tracking-tight">
+                    {recommendation.title}
+                  </h2>
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 text-[10px] sm:text-[11px] tracking-widest uppercase text-[hsl(var(--rec-muted))]">
+                    <span>{recommendation.year}</span>
+                    <span>•</span>
+                    <span>{recommendation.genre}</span>
+                    <span>•</span>
+                    <span>{recommendation.ageRating || "PG-13"}</span>
                   </div>
                 </div>
               </div>
 
-              <DialogContent className="max-w-[95vw] sm:max-w-3xl grid grid-cols-1 md:grid-cols-[2fr_3fr] gap-0 md:gap-10 p-0 overflow-hidden rounded-2xl sm:rounded-[2rem] border-0 bg-card max-h-[85vh] overflow-y-auto">
-                <div className="aspect-[4/3] md:aspect-[2/3] relative w-full overflow-hidden bg-muted shrink-0">
-                  {isPosterLoading ? (
-                    <Skeleton className="h-full w-full" />
-                  ) : posterUrl ? (
-                    <Image
-                      src={posterUrl}
-                      alt={`Poster for ${recommendation.title}`}
-                      fill
-                      sizes="(max-width: 768px) 95vw, 40vw"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <ImageIcon className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground opacity-40" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col p-5 sm:p-8 md:pl-0 md:py-8 md:pr-8">
-                  <DialogHeader className="text-left space-y-0 gap-0 mb-4 sm:mb-6">
-                    <p className="text-[10px] sm:text-[11px] tracking-widest uppercase text-muted-foreground mb-2 sm:mb-3">
-                      {recommendation.year} &nbsp;&bull;&nbsp; {recommendation.genre} &nbsp;&bull;&nbsp; {recommendation.ageRating || "PG-13"}
-                    </p>
-                    <DialogTitle className="font-headline text-2xl sm:text-3xl md:text-4xl mb-2 sm:mb-3 leading-tight">
-                      {recommendation.title}
-                    </DialogTitle>
-                    <DialogDescription className="text-sm leading-relaxed text-muted-foreground overflow-y-auto max-h-[120px] sm:max-h-[200px] md:max-h-none">
-                      {recommendation.description}
-                    </DialogDescription>
-                  </DialogHeader>
+              <div className="mt-4 sm:mt-5">
+                <p className="text-xs sm:text-sm md:text-base text-[hsl(var(--rec-muted))] leading-relaxed mb-4 sm:mb-5 line-clamp-3 sm:line-clamp-4">
+                  {recommendation.description}
+                </p>
 
-                  <div className="flex items-center gap-3 sm:gap-5 mb-4 sm:mb-8">
-                    <StarRating initialRating={displayRating} onRate={setRating} totalStars={5} />
-                    <div className="h-4 w-px bg-border" />
-                    <span className="font-bold text-base sm:text-lg text-primary">
-                      {recommendation.rating?.toFixed(1) || "8.5"}
-                      <span className="text-muted-foreground font-normal">/10</span>
-                    </span>
-                  </div>
-
-                  <div className="flex justify-start pt-4 sm:pt-6 border-t border-border/40">
-                    <FunFactButton movieTitle={recommendation.title} />
-                  </div>
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                  <Link href={`/movie/${toSlug(recommendation.title, recommendation.year)}`}>
+                    <Button className="bg-[hsl(var(--rec-text))] text-[hsl(var(--rec-surface))] hover:bg-[hsl(var(--rec-text))]/80 rounded-full px-4 sm:px-5 py-2 sm:py-2.5 h-auto text-xs sm:text-sm font-medium">
+                      View Details
+                    </Button>
+                  </Link>
+                  <FunFactButton movieTitle={recommendation.title} />
+                  <span className="text-xs sm:text-sm font-semibold text-[hsl(var(--rec-text))]">
+                    {recommendation.rating?.toFixed(1) || "8.5"}
+                    <span className="text-[hsl(var(--rec-muted))] font-normal"> /10</span>
+                  </span>
                 </div>
-              </DialogContent>
-            </Dialog>
+              </div>
+            </div>
           )}
         </div>
       </div>

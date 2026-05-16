@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { isPoolFull, getShuffledMovies, addToPool } from "@/lib/movie-pool-client";
 
 interface MovieGridProps {
-  movies: Movie[]; // Server-provided movies (from TMDB)
+  movies: Movie[];
 }
 
 export function MovieGrid({ movies: serverMovies }: MovieGridProps) {

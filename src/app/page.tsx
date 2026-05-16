@@ -21,7 +21,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="bg-background min-h-screen text-foreground">
+    <div className="bg-background min-h-screen text-foreground pt-16">
       <div className="container mx-auto px-4 sm:px-6 md:px-8">
         <Navbar />
         <main className="space-y-8 sm:space-y-12 md:space-y-24">

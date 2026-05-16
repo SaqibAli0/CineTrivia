@@ -16,9 +16,31 @@ const playfair = Playfair_Display({
   display: 'swap',
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
+
 export const metadata: Metadata = {
-  title: 'CineTrivia',
-  description: 'AI-powered movie recommendations and fun facts.',
+  title: {
+    default: 'CineTrivia — AI-Powered Movie Recommendations & Fun Facts',
+    template: '%s',
+  },
+  description: 'Discover movies with AI-powered recommendations, fun facts, and trivia. Find where to watch, explore similar films, and get personalized suggestions based on your mood.',
+  metadataBase: new URL(SITE_URL),
+  openGraph: {
+    type: 'website',
+    siteName: 'CineTrivia',
+    title: 'CineTrivia — AI-Powered Movie Recommendations & Fun Facts',
+    description: 'Discover movies with AI-powered recommendations, fun facts, and trivia.',
+    url: SITE_URL,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CineTrivia — AI-Powered Movie Recommendations & Fun Facts',
+    description: 'Discover movies with AI-powered recommendations, fun facts, and trivia.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
