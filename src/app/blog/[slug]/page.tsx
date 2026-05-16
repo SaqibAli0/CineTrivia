@@ -15,10 +15,10 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const post = getPostBySlug(slug);
-  if (!post) return { title: 'Post Not Found | CineTrivia' };
+  if (!post) return { title: 'Post Not Found' };
 
   return {
-    title: `${post.title} | CineTrivia Blog`,
+    title: `${post.title}`,
     description: post.description,
     alternates: { canonical: `/blog/${slug}` },
     openGraph: {
@@ -148,13 +148,13 @@ export default async function BlogPostPage({ params }: PageProps) {
             <Film className="w-8 h-8 text-primary mx-auto mb-4" />
             <h3 className="font-headline text-xl text-foreground mb-2">Want personalized picks?</h3>
             <p className="text-muted-foreground text-sm mb-5 max-w-sm mx-auto">
-              Tell our AI your mood and get a perfect movie recommendation.
+              Tell us your mood and get a perfect movie recommendation.
             </p>
             <Link
               href="/"
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
             >
-              Get AI Recommendation
+              Get a Recommendation
             </Link>
           </section>
         </main>

@@ -12,7 +12,7 @@ export function Footer() {
             <span className="font-headline text-lg text-foreground">CineTrivia.</span>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            AI-powered movie recommendations, fun facts, and trivia. Find your next favorite film.
+            Personalized movie recommendations, fun facts, and trivia. Find your next favorite film.
           </p>
         </div>
 
@@ -49,9 +49,9 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-border/40 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} CineTrivia. All rights reserved.</p>
-        <p>Movie data provided by TMDB. CineTrivia is not endorsed by TMDB.</p>
+      <div className="border-t border-border/40 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
+        <p>&copy; 2025 CineTrivia. All rights reserved.</p>
+        <p>CineTrivia is an independent platform.</p>
       </div>
     </footer>
   );

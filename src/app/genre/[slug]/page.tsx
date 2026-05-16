@@ -15,9 +15,9 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const genre = getGenreBySlug(slug);
-  if (!genre) return { title: 'Genre Not Found | CineTrivia' };
+  if (!genre) return { title: 'Genre Not Found' };
 
-  const title = `Best ${genre.name} Movies — Top Rated ${genre.name} Films | CineTrivia`;
+  const title = `Best ${genre.name} Movies — Top Rated ${genre.name} Films`;
   const description = `Discover the best ${genre.name.toLowerCase()} movies. Browse top-rated ${genre.name.toLowerCase()} films with ratings, fun facts, and where to watch.`;
 
   return {

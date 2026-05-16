@@ -15,16 +15,16 @@ import { GENRES } from "@/lib/genres";
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'CineTrivia — AI Movie Recommendations, Fun Facts & Where to Watch',
-  description: 'Get personalized AI movie recommendations based on your mood. Discover fun facts, trivia, cast info, and find where to watch your next favorite film. Updated daily.',
+  title: 'CineTrivia — Movie Recommendations, Fun Facts & Where to Watch',
+  description: 'Get personalized movie recommendations based on your mood. Discover fun facts, trivia, cast info, and find where to watch your next favorite film. Updated daily.',
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'CineTrivia — AI Movie Recommendations, Fun Facts & Where to Watch',
-    description: 'Get personalized AI movie recommendations based on your mood. Discover fun facts, trivia, and find where to watch.',
+    title: 'CineTrivia — Movie Recommendations, Fun Facts & Where to Watch',
+    description: 'Get personalized movie recommendations based on your mood. Discover fun facts, trivia, and find where to watch.',
     type: 'website',
     siteName: 'CineTrivia',
   },
-  keywords: ['movie recommendations', 'AI movie suggestions', 'movie fun facts', 'where to watch movies', 'movie trivia', 'film recommendations', 'what to watch tonight'],
+  keywords: ['movie recommendations', 'movie suggestions', 'movie fun facts', 'where to watch movies', 'movie trivia', 'film recommendations', 'what to watch tonight'],
 };
 
 export default async function Home() {
@@ -52,22 +52,22 @@ export default async function Home() {
               {
                 '@type': 'Question',
                 name: 'What is CineTrivia?',
-                acceptedAnswer: { '@type': 'Answer', text: 'CineTrivia is a free AI-powered movie recommendation platform. Tell us your mood or preferred genres, and our AI will suggest the perfect movie for you — complete with fun facts, cast info, ratings, and links to where you can watch it.' },
+                acceptedAnswer: { '@type': 'Answer', text: 'CineTrivia is a free movie recommendation platform. Tell us your mood or preferred genres, and we\'ll suggest the perfect movie for you — complete with fun facts, cast info, ratings, and links to where you can watch it.' },
               },
               {
                 '@type': 'Question',
                 name: 'How do I get a movie recommendation?',
-                acceptedAnswer: { '@type': 'Answer', text: 'Simply select one or more genres (like Action, Comedy, or Horror) and optionally choose a mood (like Exciting or Relaxing). Click "Get Recommendation" and our AI will instantly suggest a movie tailored to your preferences.' },
+                acceptedAnswer: { '@type': 'Answer', text: 'Simply select one or more genres (like Action, Comedy, or Horror) and optionally choose a mood (like Exciting or Relaxing). Click "Get Recommendation" and we\'ll instantly suggest a movie tailored to your preferences.' },
               },
               {
                 '@type': 'Question',
                 name: 'Is CineTrivia free to use?',
-                acceptedAnswer: { '@type': 'Answer', text: 'Yes, CineTrivia is completely free. You can get unlimited AI movie recommendations, browse our movie database, read fun facts, and find streaming links — all without creating an account.' },
+                acceptedAnswer: { '@type': 'Answer', text: 'Yes, CineTrivia is completely free. You can get unlimited movie recommendations, browse our movie database, read fun facts, and find streaming links — all without creating an account.' },
               },
               {
                 '@type': 'Question',
                 name: 'Where does the movie data come from?',
-                acceptedAnswer: { '@type': 'Answer', text: 'Our movie information comes from TMDB (The Movie Database), which provides up-to-date details on ratings, cast, crew, streaming availability, and more for thousands of films.' },
+                acceptedAnswer: { '@type': 'Answer', text: 'Our movie information is sourced from trusted public databases, providing up-to-date details on ratings, cast, crew, streaming availability, and more for thousands of films.' },
               },
               {
                 '@type': 'Question',
@@ -144,7 +144,7 @@ export default async function Home() {
               How CineTrivia Works
             </h2>
             <p className="text-muted-foreground text-sm text-center max-w-xl mx-auto mb-8">
-              Get personalized movie recommendations in seconds using our AI-powered engine.
+              Get personalized movie recommendations in seconds using our smart recommendation engine.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               <div className="text-center p-5 rounded-xl bg-card border border-border">
@@ -158,8 +158,8 @@ export default async function Home() {
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                   <span className="text-primary font-bold text-lg">2</span>
                 </div>
-                <h3 className="font-medium text-foreground mb-1.5 text-sm">AI Picks a Film</h3>
-                <p className="text-xs text-muted-foreground">Our AI analyzes thousands of movies to find the perfect match.</p>
+                <h3 className="font-medium text-foreground mb-1.5 text-sm">We Pick a Film</h3>
+                <p className="text-xs text-muted-foreground">We analyze thousands of movies to find the perfect match.</p>
               </div>
               <div className="text-center p-5 rounded-xl bg-card border border-border">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
@@ -183,7 +183,7 @@ export default async function Home() {
                   <span className="text-muted-foreground group-open:rotate-180 transition-transform">▼</span>
                 </summary>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-3 leading-relaxed">
-                  CineTrivia is a free AI-powered movie recommendation platform. Tell us your mood or preferred genres, and our AI will suggest the perfect movie for you — complete with fun facts, cast info, ratings, and links to where you can watch it.
+                  CineTrivia is a free movie recommendation platform. Tell us your mood or preferred genres, and we&apos;ll suggest the perfect movie for you — complete with fun facts, cast info, ratings, and links to where you can watch it.
                 </p>
               </details>
               <details className="group rounded-xl bg-card border border-border p-4 cursor-pointer">
@@ -192,7 +192,7 @@ export default async function Home() {
                   <span className="text-muted-foreground group-open:rotate-180 transition-transform">▼</span>
                 </summary>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-3 leading-relaxed">
-                  Simply select one or more genres (like Action, Comedy, or Horror) and optionally choose a mood (like Exciting or Relaxing). Click &quot;Get Recommendation&quot; and our AI will instantly suggest a movie tailored to your preferences.
+                  Simply select one or more genres (like Action, Comedy, or Horror) and optionally choose a mood (like Exciting or Relaxing). Click &quot;Get Recommendation&quot; and we&apos;ll instantly suggest a movie tailored to your preferences.
                 </p>
               </details>
               <details className="group rounded-xl bg-card border border-border p-4 cursor-pointer">
@@ -201,7 +201,7 @@ export default async function Home() {
                   <span className="text-muted-foreground group-open:rotate-180 transition-transform">▼</span>
                 </summary>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-3 leading-relaxed">
-                  Yes, CineTrivia is completely free. You can get unlimited AI movie recommendations, browse our movie database, read fun facts, and find streaming links — all without creating an account.
+                  Yes, CineTrivia is completely free. You can get unlimited movie recommendations, browse our movie database, read fun facts, and find streaming links — all without creating an account.
                 </p>
               </details>
               <details className="group rounded-xl bg-card border border-border p-4 cursor-pointer">
@@ -210,7 +210,7 @@ export default async function Home() {
                   <span className="text-muted-foreground group-open:rotate-180 transition-transform">▼</span>
                 </summary>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-3 leading-relaxed">
-                  Our movie information comes from TMDB (The Movie Database), which provides up-to-date details on ratings, cast, crew, streaming availability, and more for thousands of films.
+                  Our movie information is sourced from trusted public databases, providing up-to-date details on ratings, cast, crew, streaming availability, and more for thousands of films.
                 </p>
               </details>
               <details className="group rounded-xl bg-card border border-border p-4 cursor-pointer">

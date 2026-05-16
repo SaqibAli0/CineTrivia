@@ -46,7 +46,7 @@ function friendlyError(error: unknown, fallbackMessage: string): Error {
   console.error('[Action Error]', raw);
 
   if (raw.includes('503') || raw.includes('Service Unavailable')) {
-    return new Error('Our AI service is temporarily busy. Please try again in a moment.');
+    return new Error('Our service is temporarily busy. Please try again in a moment.');
   }
   if (raw.includes('429') || raw.includes('rate') || raw.includes('quota')) {
     return new Error('Too many requests. Please wait a moment and try again.');

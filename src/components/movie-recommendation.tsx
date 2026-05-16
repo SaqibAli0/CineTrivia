@@ -166,10 +166,10 @@ export function MovieRecommendation() {
         <div className="space-y-6 sm:space-y-8">
           <div className="space-y-4 sm:space-y-6">
             <h1 className="font-headline text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-foreground leading-[1.1]">
-              Discover Your Next Favorite Film
+              Movie Recommendations — Find What to Watch
             </h1>
             <p className="text-muted-foreground text-xs sm:text-sm md:text-base max-w-md leading-relaxed">
-              Select genres and a mood, and our cinematic intelligence will curate the perfect viewing experience.
+              Get personalized movie suggestions based on your mood. Select genres, pick a vibe, and discover the perfect film in seconds.
             </p>
           </div>
 

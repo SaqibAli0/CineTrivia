@@ -21,8 +21,8 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-a
 
 export const metadata: Metadata = {
   title: {
-    default: 'CineTrivia — Movie Recommendations & Fun Facts',
-    template: '%s',
+    default: 'CineTrivia — Movie Recommendations, Fun Facts & Where to Watch',
+    template: '%s | CineTrivia',
   },
   description: 'Discover movies with personalized recommendations, fun facts, and trivia. Find where to watch, explore similar films, and get suggestions based on your mood.',
   metadataBase: new URL(SITE_URL),

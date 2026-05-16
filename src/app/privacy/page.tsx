@@ -58,8 +58,8 @@ export default function PrivacyPage() {
                   your device.
                 </li>
                 <li>
-                  <strong>AI Interactions:</strong> When you use our recommendation or fun fact
-                  features, your input (mood/genre preferences) is sent to our AI service to
+                  <strong>Recommendation Interactions:</strong> When you use our recommendation or fun fact
+                  features, your input (mood/genre preferences) is sent to our service to
                   generate results. We do not store these inputs permanently.
                 </li>
               </ul>
@@ -74,7 +74,7 @@ export default function PrivacyPage() {
                   are sourced from third-party databases subject to their own privacy policies.
                 </li>
                 <li>
-                  <strong>AI Services:</strong> Powers our recommendation engine and fun facts.
+                  <strong>Recommendation Services:</strong> Powers our recommendation engine and fun facts.
                   Your input (mood/genre preferences) is processed to generate results.
                 </li>
                 <li>

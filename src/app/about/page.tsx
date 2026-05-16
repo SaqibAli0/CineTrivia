@@ -3,8 +3,15 @@ import Link from 'next/link';
 import { Film, ArrowLeft, Sparkles, Clapperboard, Heart } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'About CineTrivia — AI-Powered Movie Discovery',
-  description: 'CineTrivia uses AI to help you discover movies, get personalized recommendations, and learn fun facts about your favorite films.',
+  title: 'About CineTrivia — Personalized Movie Recommendations & Trivia',
+  description: 'CineTrivia is a free movie recommendation platform. Get personalized movie suggestions based on your mood, discover fun facts, and find where to watch any film.',
+  alternates: { canonical: '/about' },
+  openGraph: {
+    title: 'About CineTrivia — Movie Discovery Platform',
+    description: 'CineTrivia helps you discover movies, get personalized recommendations, and learn fun facts about your favorite films.',
+    type: 'website',
+    siteName: 'CineTrivia',
+  },
 };
 
 export default function AboutPage() {
@@ -32,7 +39,7 @@ export default function AboutPage() {
             About CineTrivia
           </h1>
           <p className="text-lg text-muted-foreground mb-10 max-w-2xl">
-            Your AI-powered companion for discovering movies, uncovering trivia, and finding
+            Your companion for discovering movies, uncovering trivia, and finding
             your next favorite film.
           </p>
 
@@ -52,20 +59,20 @@ export default function AboutPage() {
               </p>
             </section>
 
-            {/* AI-Powered Features */}
+            {/* Smart Features */}
             <section className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <Sparkles className="w-5 h-5 text-primary" />
                 </div>
-                <h2 className="font-headline text-xl text-foreground">AI-Powered Features</h2>
+                <h2 className="font-headline text-xl text-foreground">Smart Features</h2>
               </div>
               <ul className="space-y-3 text-muted-foreground">
                 <li className="flex gap-2">
                   <span className="text-primary font-bold">•</span>
                   <span>
                     <strong className="text-foreground">Smart Recommendations:</strong> Tell us
-                    your mood or favorite genre, and our AI suggests the perfect movie for you.
+                    your mood or favorite genre, and we&apos;ll suggest the perfect movie for you.
                   </span>
                 </li>
                 <li className="flex gap-2">
@@ -105,7 +112,7 @@ export default function AboutPage() {
             <section className="space-y-4 pt-6 border-t border-border/40">
               <h2 className="font-headline text-xl text-foreground">Credits</h2>
               <p className="text-sm text-muted-foreground">
-                CineTrivia uses publicly available movie data and AI technology to deliver
+                CineTrivia uses publicly available movie data and smart technology to deliver
                 recommendations and trivia. All movie posters and metadata are sourced from
                 third-party databases under their respective terms of use.
               </p>

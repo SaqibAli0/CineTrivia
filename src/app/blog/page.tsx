@@ -6,8 +6,8 @@ import { Footer } from '@/components/footer';
 import { Navbar } from '@/components/navbar';
 
 export const metadata: Metadata = {
-  title: 'Blog — Movie Lists, Recommendations & Trivia | CineTrivia',
-  description: 'Discover curated movie lists, AI-powered recommendations, and film trivia. Find your next favorite movie with our expert guides.',
+  title: 'Blog — Movie Lists, Recommendations & Trivia',
+  description: 'Discover curated movie lists, personalized recommendations, and film trivia. Find your next favorite movie with our expert guides.',
   alternates: { canonical: '/blog' },
   openGraph: {
     title: 'CineTrivia Blog — Movie Lists & Recommendations',
@@ -24,7 +24,7 @@ export default function BlogPage() {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     name: 'CineTrivia Blog',
-    description: 'Curated movie lists, AI-powered recommendations, and film trivia.',
+    description: 'Curated movie lists, personalized recommendations, and film trivia.',
     url: `${siteUrl}/blog`,
     mainEntity: {
       '@type': 'ItemList',
@@ -60,7 +60,7 @@ export default function BlogPage() {
               CineTrivia Blog
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base max-w-2xl">
-              Curated movie lists, AI-powered recommendations, and film trivia to help you find your next favorite movie.
+              Curated movie lists, personalized recommendations, and film trivia to help you find your next favorite movie.
             </p>
           </div>
 

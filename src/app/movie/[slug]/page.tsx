@@ -23,18 +23,18 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const parsed = fromSlug(slug);
-  if (!parsed) return { title: 'Movie Not Found | CineTrivia' };
+  if (!parsed) return { title: 'Movie Not Found' };
   const movieId = await findMovieId(parsed.title, parsed.year);
-  if (!movieId) return { title: 'Movie Not Found | CineTrivia' };
+  if (!movieId) return { title: 'Movie Not Found' };
   const movie = await getMovieDetails(movieId);
-  if (!movie) return { title: 'Movie Not Found | CineTrivia' };
-  const title = `${movie.title} (${movie.year}) — Movie Facts & Where to Watch | CineTrivia`;
+  if (!movie) return { title: 'Movie Not Found' };
+  const title = `${movie.title} (${movie.year}) — Movie Facts & Where to Watch`;
   const description = `Discover fun facts about ${movie.title} (${movie.year}). ${movie.overview.slice(0, 120)}... Find where to watch, cast info, and similar movies.`;
   return {
     title,
     description,
     alternates: { canonical: `/movie/${slug}` },
-    openGraph: { title, description, type: 'video.movie', images: movie.posterUrl ? [{ url: movie.posterUrl, width: 500, height: 750 }] : [], siteName: 'CineTrivia' },
+    openGraph: { title: `${title} | CineTrivia`, description, type: 'video.movie', images: movie.posterUrl ? [{ url: movie.posterUrl, width: 500, height: 750 }] : [], siteName: 'CineTrivia' },
     twitter: { card: 'summary_large_image', title: `${movie.title} (${movie.year}) | CineTrivia`, description, images: movie.posterUrl ? [movie.posterUrl] : [] },
   };
 }
@@ -264,8 +264,8 @@ export default async function MoviePage({ params }: PageProps) {
             <section className="text-center py-12 sm:py-16 rounded-2xl bg-card border border-border">
               <Film className="w-8 h-8 text-primary mx-auto mb-4" />
               <h3 className="font-headline text-xl sm:text-2xl text-foreground mb-2">Need a recommendation?</h3>
-              <p className="text-muted-foreground text-sm mb-6 max-w-sm mx-auto">Tell us your mood and our AI picks the perfect movie for you.</p>
-              <Link href="/"><Button size="lg" className="rounded-full px-8">Get AI Recommendation<ArrowRight className="w-4 h-4 ml-2" /></Button></Link>
+              <p className="text-muted-foreground text-sm mb-6 max-w-sm mx-auto">Tell us your mood and we&apos;ll pick the perfect movie for you.</p>
+              <Link href="/"><Button size="lg" className="rounded-full px-8">Get a Recommendation<ArrowRight className="w-4 h-4 ml-2" /></Button></Link>
             </section>
           </div>
         </main>
