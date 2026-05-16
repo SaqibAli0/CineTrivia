@@ -11,20 +11,31 @@ import { getMovieCollection, type TMDBMovie } from './tmdb';
 
 const POOL_CACHE_KEY = 'movie_pool_v2';
 const POOL_TARGET = 100;
+const POOL_TTL_MS = 6 * 60 * 60 * 1000; // Refresh pool every 6 hours for variety
 
 interface MoviePool {
   movies: TMDBMovie[];
   isFull: boolean;
+  createdAt: number;
 }
 
 // In-memory pool (survives across requests in the same server process)
 let memoryPool: MoviePool | null = null;
 
+function isPoolExpired(pool: MoviePool): boolean {
+  return Date.now() - pool.createdAt > POOL_TTL_MS;
+}
+
 function getPool(): MoviePool | null {
-  if (memoryPool) return memoryPool;
+  if (memoryPool && !isPoolExpired(memoryPool)) return memoryPool;
+
+  // Pool expired — clear it so we refill with fresh movies
+  if (memoryPool && isPoolExpired(memoryPool)) {
+    memoryPool = null;
+  }
 
   const cached = getDevCache<MoviePool>(POOL_CACHE_KEY);
-  if (cached) {
+  if (cached && !isPoolExpired(cached)) {
     memoryPool = cached;
     return cached;
   }
@@ -78,7 +89,7 @@ export async function getMoviesFromPool(count: number = 40): Promise<TMDBMovie[]
     const isFull = all.length >= POOL_TARGET;
     const trimmed = all.slice(0, POOL_TARGET);
 
-    pool = { movies: trimmed, isFull };
+    pool = { movies: trimmed, isFull, createdAt: pool?.createdAt ?? Date.now() };
     savePool(pool);
 
     return shuffle(trimmed).slice(0, count);

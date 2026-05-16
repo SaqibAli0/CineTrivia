@@ -117,7 +117,7 @@ async function fetchFromTMDB(endpoint: string, params: Record<string, string> = 
     url.searchParams.set(key, value);
   }
 
-  const response = await fetch(url.toString(), { next: { revalidate: 3600 } });
+  const response = await fetch(url.toString(), { cache: 'no-store' });
 
   if (!response.ok) {
     throw new Error(`TMDB request failed: ${response.status} ${response.statusText}`);

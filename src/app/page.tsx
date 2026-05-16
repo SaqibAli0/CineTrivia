@@ -5,6 +5,9 @@ import { Footer } from "@/components/footer";
 import { getMoviesFromPool } from "@/lib/movie-pool";
 import { toMovie, fallbackMovies } from "@/lib/movies";
 
+// Force dynamic rendering so the shuffle produces a fresh order on every request
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   let movies = fallbackMovies;
 
