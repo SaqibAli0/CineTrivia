@@ -35,11 +35,13 @@ export const metadata: Metadata = {
     title: 'CineTrivia — Movie Recommendations & Fun Facts',
     description: 'Discover movies with personalized recommendations, fun facts, and trivia.',
     url: SITE_URL,
+    images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: 'CineTrivia' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'CineTrivia — Movie Recommendations & Fun Facts',
     description: 'Discover movies with personalized recommendations, fun facts, and trivia.',
+    images: [`${SITE_URL}/opengraph-image`],
   },
   robots: {
     index: true,

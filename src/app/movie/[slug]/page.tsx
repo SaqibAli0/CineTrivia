@@ -261,6 +261,33 @@ export default async function MoviePage({ params }: PageProps) {
               </div>
             </section>
 
+            {/* Genre links — internal linking for SEO */}
+            {movie.genres.length > 0 && (
+              <section>
+                <h2 className="font-headline text-xl sm:text-2xl text-foreground mb-4 flex items-center gap-2">
+                  <Film className="w-5 h-5 text-primary" />
+                  Explore More by Genre
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {movie.genres.map((genre) => (
+                    <Link
+                      key={genre}
+                      href={`/genre/${genre.toLowerCase().replace(/\s+/g, '-')}`}
+                      className="px-4 py-2 rounded-full bg-card border border-border hover:border-primary/40 hover:text-primary text-sm font-medium text-muted-foreground transition-all"
+                    >
+                      {genre} Movies
+                    </Link>
+                  ))}
+                  <Link
+                    href="/genre"
+                    className="px-4 py-2 rounded-full bg-card border border-border hover:border-primary/40 hover:text-primary text-sm font-medium text-muted-foreground transition-all"
+                  >
+                    All Genres →
+                  </Link>
+                </div>
+              </section>
+            )}
+
             <section className="text-center py-12 sm:py-16 rounded-2xl bg-card border border-border">
               <Film className="w-8 h-8 text-primary mx-auto mb-4" />
               <h3 className="font-headline text-xl sm:text-2xl text-foreground mb-2">Need a recommendation?</h3>

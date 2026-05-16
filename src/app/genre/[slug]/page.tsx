@@ -24,6 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title,
     description,
     alternates: { canonical: `/genre/${slug}` },
+    keywords: [`best ${genre.name.toLowerCase()} movies`, `top ${genre.name.toLowerCase()} films`, `${genre.name.toLowerCase()} movie recommendations`, `${genre.name.toLowerCase()} movies to watch`],
     openGraph: { title, description, type: 'website', siteName: 'CineTrivia' },
   };
 }
@@ -107,7 +108,7 @@ export default async function GenrePage({ params }: PageProps) {
                     {movie.posterUrl ? (
                       <Image
                         src={movie.posterUrl}
-                        alt={`${movie.title} poster`}
+                        alt={`${movie.title} (${movie.year}) poster`}
                         fill
                         sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
