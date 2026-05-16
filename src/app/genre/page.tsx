@@ -9,6 +9,7 @@ import { GENRES } from '@/lib/genres';
 export const metadata: Metadata = {
   title: 'Browse Movies by Genre | CineTrivia',
   description: 'Explore movies by genre — Action, Comedy, Drama, Horror, Sci-Fi, Thriller, and more. Find your next favorite film.',
+  alternates: { canonical: '/genre' },
   openGraph: {
     title: 'Browse Movies by Genre | CineTrivia',
     description: 'Explore movies by genre — Action, Comedy, Drama, Horror, Sci-Fi, and more.',

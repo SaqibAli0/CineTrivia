@@ -63,7 +63,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let moviePages: MetadataRoute.Sitemap = [];
 
   try {
-    const movies = await getPopularMoviesList(5); // 5 pages = ~100 movies
+    const movies = await getPopularMoviesList(10); // 10 pages = ~200 movies for broader coverage
     moviePages = movies.map((movie) => ({
       url: `${SITE_URL}/movie/${movie.slug}`,
       lastModified: new Date(),

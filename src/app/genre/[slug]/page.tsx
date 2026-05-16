@@ -23,6 +23,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title,
     description,
+    alternates: { canonical: `/genre/${slug}` },
     openGraph: { title, description, type: 'website', siteName: 'CineTrivia' },
   };
 }
@@ -38,8 +39,41 @@ export default async function GenrePage({ params }: PageProps) {
 
   const movies = await getMoviesByGenre(genre.id);
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
+      { '@type': 'ListItem', position: 2, name: 'Genres', item: `${siteUrl}/genre` },
+      { '@type': 'ListItem', position: 3, name: `${genre.name} Movies` },
+    ],
+  };
+
+  const itemListSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: `Best ${genre.name} Movies`,
+    numberOfItems: movies.length,
+    itemListElement: movies.slice(0, 10).map((movie, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: `${siteUrl}/movie/${movie.slug}`,
+      name: movie.title,
+    })),
+  };
+
   return (
     <div className="bg-background min-h-screen text-foreground pt-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+      />
       <div className="container mx-auto px-4 sm:px-6 md:px-8">
         <Navbar />
         <main className="py-8 sm:py-12">

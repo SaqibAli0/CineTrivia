@@ -29,10 +29,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const movie = await getMovieDetails(movieId);
   if (!movie) return { title: 'Movie Not Found | CineTrivia' };
   const title = `${movie.title} (${movie.year}) — Movie Facts & Where to Watch | CineTrivia`;
-  const description = `Discover fun facts about ${movie.title}. ${movie.overview.slice(0, 140)}...`;
+  const description = `Discover fun facts about ${movie.title} (${movie.year}). ${movie.overview.slice(0, 120)}... Find where to watch, cast info, and similar movies.`;
   return {
     title,
     description,
+    alternates: { canonical: `/movie/${slug}` },
     openGraph: { title, description, type: 'video.movie', images: movie.posterUrl ? [{ url: movie.posterUrl, width: 500, height: 750 }] : [], siteName: 'CineTrivia' },
     twitter: { card: 'summary_large_image', title: `${movie.title} (${movie.year}) | CineTrivia`, description, images: movie.posterUrl ? [movie.posterUrl] : [] },
   };
@@ -58,9 +59,27 @@ export default async function MoviePage({ params }: PageProps) {
   ]);
   if (!movie) notFound();
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
+      ...(movie.genres.length > 0
+        ? [{ '@type': 'ListItem', position: 2, name: movie.genres[0], item: `${siteUrl}/genre/${movie.genres[0].toLowerCase().replace(/\s+/g, '-')}` }]
+        : []),
+      { '@type': 'ListItem', position: movie.genres.length > 0 ? 3 : 2, name: `${movie.title} (${movie.year})` },
+    ],
+  };
+
   return (
     <div className="bg-background min-h-screen text-foreground pt-16">
       <MovieJsonLd movie={movie} slug={slug} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <div className="container mx-auto px-4 sm:px-6 md:px-8">
         <Navbar />
         <main>
@@ -180,6 +199,67 @@ export default async function MoviePage({ params }: PageProps) {
                 <SimilarMoviesGrid movies={similarMovies} />
               </section>
             )}
+
+            {/* FAQ Section — targets "where to watch [movie]", "who directed [movie]" queries */}
+            <section>
+              <h2 className="font-headline text-xl sm:text-2xl text-foreground mb-5 flex items-center gap-2">
+                <Film className="w-5 h-5 text-primary" />
+                Frequently Asked Questions
+              </h2>
+              <div className="space-y-3">
+                <details className="group rounded-xl bg-card border border-border p-4 cursor-pointer">
+                  <summary className="font-medium text-sm text-foreground list-none flex items-center justify-between">
+                    Where can I watch {movie.title}?
+                    <span className="text-muted-foreground group-open:rotate-180 transition-transform text-xs">▼</span>
+                  </summary>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-3 leading-relaxed">
+                    Check the &quot;Where to Watch&quot; section above for current streaming platforms, rental options, and purchase links for {movie.title} ({movie.year}).
+                  </p>
+                </details>
+                <details className="group rounded-xl bg-card border border-border p-4 cursor-pointer">
+                  <summary className="font-medium text-sm text-foreground list-none flex items-center justify-between">
+                    What is {movie.title} about?
+                    <span className="text-muted-foreground group-open:rotate-180 transition-transform text-xs">▼</span>
+                  </summary>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-3 leading-relaxed">
+                    {movie.overview}
+                  </p>
+                </details>
+                {movie.director && (
+                  <details className="group rounded-xl bg-card border border-border p-4 cursor-pointer">
+                    <summary className="font-medium text-sm text-foreground list-none flex items-center justify-between">
+                      Who directed {movie.title}?
+                      <span className="text-muted-foreground group-open:rotate-180 transition-transform text-xs">▼</span>
+                    </summary>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-3 leading-relaxed">
+                      {movie.title} was directed by {movie.director} and released in {movie.year}. {movie.genres.length > 0 ? `It is a ${movie.genres.join(', ').toLowerCase()} film.` : ''}
+                    </p>
+                  </details>
+                )}
+                {movie.runtime && movie.runtime > 0 && (
+                  <details className="group rounded-xl bg-card border border-border p-4 cursor-pointer">
+                    <summary className="font-medium text-sm text-foreground list-none flex items-center justify-between">
+                      How long is {movie.title}?
+                      <span className="text-muted-foreground group-open:rotate-180 transition-transform text-xs">▼</span>
+                    </summary>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-3 leading-relaxed">
+                      {movie.title} has a runtime of {Math.floor(movie.runtime / 60)} hours and {movie.runtime % 60} minutes ({movie.runtime} minutes total).
+                    </p>
+                  </details>
+                )}
+                {movie.cast.length > 0 && (
+                  <details className="group rounded-xl bg-card border border-border p-4 cursor-pointer">
+                    <summary className="font-medium text-sm text-foreground list-none flex items-center justify-between">
+                      Who stars in {movie.title}?
+                      <span className="text-muted-foreground group-open:rotate-180 transition-transform text-xs">▼</span>
+                    </summary>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-3 leading-relaxed">
+                      The cast of {movie.title} includes {movie.cast.slice(0, 5).map(c => `${c.name} as ${c.character}`).join(', ')}{movie.cast.length > 5 ? ' and more' : ''}.
+                    </p>
+                  </details>
+                )}
+              </div>
+            </section>
 
             <section className="text-center py-12 sm:py-16 rounded-2xl bg-card border border-border">
               <Film className="w-8 h-8 text-primary mx-auto mb-4" />

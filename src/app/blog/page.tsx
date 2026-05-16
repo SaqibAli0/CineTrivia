@@ -8,6 +8,7 @@ import { Navbar } from '@/components/navbar';
 export const metadata: Metadata = {
   title: 'Blog — Movie Lists, Recommendations & Trivia | CineTrivia',
   description: 'Discover curated movie lists, AI-powered recommendations, and film trivia. Find your next favorite movie with our expert guides.',
+  alternates: { canonical: '/blog' },
   openGraph: {
     title: 'CineTrivia Blog — Movie Lists & Recommendations',
     description: 'Curated movie lists, recommendations, and trivia from CineTrivia.',
@@ -17,9 +18,32 @@ export const metadata: Metadata = {
 
 export default function BlogPage() {
   const posts = getAllPosts();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
+
+  const collectionSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'CineTrivia Blog',
+    description: 'Curated movie lists, AI-powered recommendations, and film trivia.',
+    url: `${siteUrl}/blog`,
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: posts.length,
+      itemListElement: posts.map((post, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        url: `${siteUrl}/blog/${post.slug}`,
+        name: post.title,
+      })),
+    },
+  };
 
   return (
     <div className="bg-background min-h-screen text-foreground pt-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
+      />
       <div className="container mx-auto px-4 sm:px-6 md:px-8">
         <Navbar />
         <main className="py-8 sm:py-12">

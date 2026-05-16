@@ -20,6 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${post.title} | CineTrivia Blog`,
     description: post.description,
+    alternates: { canonical: `/blog/${slug}` },
     openGraph: {
       title: post.title,
       description: post.description,
@@ -174,6 +175,21 @@ export default async function BlogPostPage({ params }: PageProps) {
             author: { '@type': 'Organization', name: post.author },
             publisher: { '@type': 'Organization', name: 'CineTrivia' },
             mainEntityOfPage: `${siteUrl}/blog/${post.slug}`,
+          }),
+        }}
+      />
+      {/* Breadcrumb schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
+              { '@type': 'ListItem', position: 2, name: 'Blog', item: `${siteUrl}/blog` },
+              { '@type': 'ListItem', position: 3, name: post.title },
+            ],
           }),
         }}
       />
