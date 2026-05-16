@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { CirclePlay } from 'lucide-react';
 import type { WatchProvider } from '@/lib/tmdb-details';
+import { getAffiliateUrl } from '@/lib/affiliate';
 
 interface WatchButtonsProps {
   movieTitle: string;
@@ -13,12 +14,10 @@ interface WatchButtonsProps {
 /**
  * Shows actual streaming platforms where the movie is available.
  * Data comes from TMDB's watch providers API.
- * Falls back to search links if no providers found.
+ * Links use affiliate URLs when configured.
  */
 export function WatchButtons({ movieTitle, year, providers }: WatchButtonsProps) {
-  const q = encodeURIComponent(`${movieTitle} ${year}`);
-
-  // If TMDB returned real providers, show those
+  // If TMDB returned real providers, show those with affiliate links
   if (providers.length > 0) {
     return (
       <div>
@@ -30,9 +29,9 @@ export function WatchButtons({ movieTitle, year, providers }: WatchButtonsProps)
           {providers.map((provider) => (
             <a
               key={provider.id}
-              href={`https://www.google.com/search?q=watch+${q}+on+${encodeURIComponent(provider.name)}`}
+              href={getAffiliateUrl(provider.name, movieTitle, year)}
               target="_blank"
-              rel="noopener noreferrer nofollow"
+              rel="noopener sponsored"
               className="group flex items-center gap-3 h-12 px-3 rounded-lg bg-card border border-border hover:border-primary/40 transition-all duration-200"
             >
               {provider.logoUrl && (
@@ -50,14 +49,14 @@ export function WatchButtons({ movieTitle, year, providers }: WatchButtonsProps)
             </a>
           ))}
         </div>
-        <p className="text-[10px] text-muted-foreground/50 mt-3">
-          Availability may vary by region. Links may contain affiliate tags.
+        <p className="text-[10px] text-muted-foreground/60 mt-3">
+          Availability may vary by region. Some links are affiliate links — we may earn a commission at no extra cost to you.
         </p>
       </div>
     );
   }
 
-  // Fallback: no provider data available — movie likely just released or not on OTT yet
+  // Fallback: no provider data available
   return (
     <div>
       <h2 className="font-headline text-xl sm:text-2xl text-foreground mb-5 flex items-center gap-2">

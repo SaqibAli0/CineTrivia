@@ -1,5 +1,7 @@
 import { MetadataRoute } from 'next';
 import { getPopularMoviesList } from '@/lib/tmdb-details';
+import { getAllPosts } from '@/lib/blog';
+import { GENRES } from '@/lib/genres';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
 
@@ -24,7 +26,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 0.3,
     },
+    {
+      url: `${SITE_URL}/blog`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}/genre`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
   ];
+
+  // Blog posts
+  const blogPages: MetadataRoute.Sitemap = getAllPosts().map((post) => ({
+    url: `${SITE_URL}/blog/${post.slug}`,
+    lastModified: new Date(post.updatedAt || post.publishedAt),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
+
+  // Genre pages
+  const genrePages: MetadataRoute.Sitemap = GENRES.map((genre) => ({
+    url: `${SITE_URL}/genre/${genre.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.6,
+  }));
 
   // Dynamic movie pages from TMDB popular movies
   let moviePages: MetadataRoute.Sitemap = [];
@@ -41,5 +71,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Sitemap: Failed to fetch movies:', error);
   }
 
-  return [...staticPages, ...moviePages];
+  return [...staticPages, ...blogPages, ...genrePages, ...moviePages];
 }

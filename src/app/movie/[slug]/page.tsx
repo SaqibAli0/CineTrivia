@@ -13,6 +13,8 @@ import { SimilarMoviesGrid } from '@/components/similar-movies-grid';
 import { WatchButtons } from '@/components/watch-buttons';
 import { MovieJsonLd } from '@/components/movie-json-ld';
 import { CastCarousel } from '@/components/cast-carousel';
+import { SocialShare } from '@/components/social-share';
+import { AdSenseSlot } from '@/components/adsense-slot';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -120,6 +122,11 @@ export default async function MoviePage({ params }: PageProps) {
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
                     <FunFactButton movieTitle={movie.title} />
+                    <SocialShare
+                      title={`${movie.title} (${movie.year})`}
+                      url={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app'}/movie/${slug}`}
+                      description={movie.tagline || `Discover fun facts about ${movie.title}`}
+                    />
                   </div>
                 </div>
               </div>
@@ -160,6 +167,9 @@ export default async function MoviePage({ params }: PageProps) {
                 </div>
               )}
             </section>
+
+            {/* Ad placement — renders only when AdSense is configured */}
+            <AdSenseSlot slot={process.env.NEXT_PUBLIC_ADSENSE_MOVIE_SLOT || ''} format="horizontal" className="my-4" />
 
             {similarMovies.length > 0 && (
               <section>

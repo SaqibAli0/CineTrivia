@@ -160,7 +160,7 @@ export function MovieRecommendation() {
   }
 
   return (
-    <section className="py-6 sm:py-8 md:py-12">
+    <section className="pt-6 sm:pt-8 md:pt-12">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
         {/* Left: Form */}
         <div className="space-y-6 sm:space-y-8">
