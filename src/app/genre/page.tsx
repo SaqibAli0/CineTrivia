@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
+import { GenreIcon } from '@/components/genre-icon';
 import { GENRES } from '@/lib/genres';
 
 export const metadata: Metadata = {
@@ -45,7 +46,7 @@ export default function GenresPage() {
                 href={`/genre/${genre.slug}`}
                 className="group flex flex-col items-center justify-center p-5 sm:p-6 rounded-xl bg-card border border-border hover:border-primary/40 transition-all duration-200 hover:shadow-md"
               >
-                <span className="text-3xl sm:text-4xl mb-2">{genre.emoji}</span>
+                <GenreIcon slug={genre.slug} className="w-7 h-7 sm:w-8 sm:h-8 text-primary mb-2" />
                 <span className="text-sm sm:text-base font-medium text-foreground group-hover:text-primary transition-colors">
                   {genre.name}
                 </span>

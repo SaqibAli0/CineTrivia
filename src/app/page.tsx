@@ -4,6 +4,7 @@ import { MovieRecommendation } from "@/components/movie-recommendation";
 import { MovieGrid } from "@/components/movie-grid";
 import { MovieOfTheDay } from "@/components/movie-of-the-day";
 import { Footer } from "@/components/footer";
+import { GenreIcon } from "@/components/genre-icon";
 import { getMoviesFromPool } from "@/lib/movie-pool";
 import { getMovieOfTheDay } from "@/lib/movie-of-the-day";
 import { toMovie, fallbackMovies } from "@/lib/movies";
@@ -64,15 +65,15 @@ export default async function Home() {
                 View all &rarr;
               </Link>
             </div>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
-              {GENRES.slice(0, 12).map((genre) => (
+            <div className="grid grid-cols-6 gap-2 sm:gap-3">
+              {GENRES.slice(0, 6).map((genre) => (
                 <Link
                   key={genre.slug}
                   href={`/genre/${genre.slug}`}
-                  className="flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl bg-card border border-border hover:border-primary/40 transition-all duration-200 hover:shadow-sm"
+                  className="group flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl bg-card border border-border hover:border-primary/40 transition-all duration-200 hover:shadow-sm"
                 >
-                  <span className="text-xl sm:text-2xl mb-1">{genre.emoji}</span>
-                  <span className="text-[11px] sm:text-xs font-medium text-muted-foreground group-hover:text-foreground">
+                  <GenreIcon slug={genre.slug} className="w-5 h-5 sm:w-6 sm:h-6 text-primary mb-1.5" />
+                  <span className="text-[11px] sm:text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                     {genre.name}
                   </span>
                 </Link>

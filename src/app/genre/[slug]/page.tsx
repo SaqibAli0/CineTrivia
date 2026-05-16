@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, Star, Film, ImageIcon } from 'lucide-react';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
+import { GenreIcon } from '@/components/genre-icon';
 import { GENRES, getGenreBySlug, getMoviesByGenre } from '@/lib/genres';
 
 interface PageProps {
@@ -51,8 +52,9 @@ export default async function GenrePage({ params }: PageProps) {
           </Link>
 
           <div className="mb-8">
-            <h1 className="font-headline text-3xl sm:text-4xl text-foreground mb-2">
-              {genre.emoji} {genre.name} Movies
+            <h1 className="font-headline text-3xl sm:text-4xl text-foreground mb-2 flex items-center gap-3">
+              <GenreIcon slug={genre.slug} className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
+              {genre.name} Movies
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base max-w-2xl">
               {genre.description}

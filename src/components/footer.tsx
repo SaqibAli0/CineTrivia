@@ -12,11 +12,6 @@ export function Footer() {
             <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
           </nav>
         </div>
-        <p className="text-center text-[10px] text-muted-foreground/50">
-          CineTrivia is a participant in affiliate programs including Amazon Associates. 
-          Some links on this site are affiliate links, meaning we may earn a small commission 
-          at no extra cost to you when you make a purchase through our links.
-        </p>
       </div>
     </footer>
   );
