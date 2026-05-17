@@ -6,7 +6,7 @@ import { GENRES } from '@/lib/genres';
 export const dynamic = 'force-dynamic';
 export const revalidate = 86400; // revalidate once per day
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || '';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static pages

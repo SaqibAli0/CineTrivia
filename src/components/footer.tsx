@@ -1,57 +1,29 @@
 import Link from "next/link";
-import { Film } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="border-t border-border/40 py-8 sm:py-12 mt-10 sm:mt-16">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 mb-8">
-        {/* Brand */}
-        <div className="col-span-2 sm:col-span-1">
-          <div className="flex items-center gap-2 mb-3">
-            <Film className="w-4 h-4 text-primary" />
-            <span className="font-headline text-lg text-foreground">CineTrivia.</span>
+    <footer className="border-t border-bordercolor bg-black/40 py-8 px-6 mt-12 relative z-10">
+      <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+        {/* Left */}
+        <div className="flex items-center gap-4">
+          <div className="w-3 h-3 bg-terracotta rounded-full animate-pulse" />
+          <div className="mono-font text-parchment/60">
+            © 2025 CineTrivia<br />
+            All rights reserved
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Personalized movie recommendations, fun facts, and trivia. Find your next favorite film.
-          </p>
         </div>
 
-        {/* Explore */}
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-foreground mb-3">Explore</p>
-          <nav className="space-y-2 text-xs sm:text-sm text-muted-foreground" aria-label="Explore links">
-            <Link href="/" className="block hover:text-foreground transition-colors">Home</Link>
-            <Link href="/genre" className="block hover:text-foreground transition-colors">Browse Genres</Link>
-            <Link href="/blog" className="block hover:text-foreground transition-colors">Blog</Link>
-          </nav>
+        {/* Center */}
+        <div className="display-font text-2xl text-parchment/20 tracking-widest text-center">
+          CineTrivia
         </div>
 
-        {/* Popular Genres */}
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-foreground mb-3">Genres</p>
-          <nav className="space-y-2 text-xs sm:text-sm text-muted-foreground" aria-label="Genre links">
-            <Link href="/genre/action" className="block hover:text-foreground transition-colors">Action Movies</Link>
-            <Link href="/genre/comedy" className="block hover:text-foreground transition-colors">Comedy Movies</Link>
-            <Link href="/genre/horror" className="block hover:text-foreground transition-colors">Horror Movies</Link>
-            <Link href="/genre/sci-fi" className="block hover:text-foreground transition-colors">Sci-Fi Movies</Link>
-            <Link href="/genre/drama" className="block hover:text-foreground transition-colors">Drama Movies</Link>
-            <Link href="/genre/thriller" className="block hover:text-foreground transition-colors">Thriller Movies</Link>
-          </nav>
+        {/* Right */}
+        <div className="flex gap-6 mono-font !text-[14px] text-parchment/40 text-right">
+          <Link href="/" className="hover:text-terracotta transition-colors">Home</Link>
+          <Link href="/privacy" className="hover:text-terracotta transition-colors">Privacy</Link>
+          <Link href="/about" className="hover:text-terracotta transition-colors">About</Link>
         </div>
-
-        {/* Company */}
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-foreground mb-3">Company</p>
-          <nav className="space-y-2 text-xs sm:text-sm text-muted-foreground" aria-label="Company links">
-            <Link href="/about" className="block hover:text-foreground transition-colors">About Us</Link>
-            <Link href="/privacy" className="block hover:text-foreground transition-colors">Privacy Policy</Link>
-          </nav>
-        </div>
-      </div>
-
-      <div className="border-t border-border/40 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
-        <p>&copy; 2025 CineTrivia. All rights reserved.</p>
-        <p>CineTrivia is an independent platform.</p>
       </div>
     </footer>
   );

@@ -10,7 +10,7 @@ interface MovieJsonLdProps {
  * Helps Google show rich results (star ratings, poster, etc.)
  */
 export function MovieJsonLd({ movie, slug }: MovieJsonLdProps) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL  ;
 
   const jsonLd = {
     '@context': 'https://schema.org',

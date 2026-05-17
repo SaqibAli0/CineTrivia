@@ -1,6 +1,5 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import { GenreIcon } from '@/components/genre-icon';
@@ -8,55 +7,48 @@ import { GENRES } from '@/lib/genres';
 
 export const metadata: Metadata = {
   title: 'Browse Movies by Genre',
-  description: 'Explore movies by genre — Action, Comedy, Drama, Horror, Sci-Fi, Thriller, and more. Find your next favorite film.',
+  description: 'Explore movies by genre — Action, Comedy, Drama, Horror, Sci-Fi, Thriller, and more.',
   alternates: { canonical: '/genre' },
-  openGraph: {
-    title: 'Browse Movies by Genre | CineTrivia',
-    description: 'Explore movies by genre — Action, Comedy, Drama, Horror, Sci-Fi, and more.',
-    type: 'website',
-  },
 };
 
 export default function GenresPage() {
   return (
-    <div className="bg-background min-h-screen text-foreground pt-16">
-      <div className="container mx-auto px-4 sm:px-6 md:px-8">
-        <Navbar />
-        <main className="py-8 sm:py-12">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
-          </Link>
-
-          <div className="mb-10">
-            <h1 className="font-headline text-3xl sm:text-4xl md:text-5xl text-foreground mb-3">
-              Browse by Genre
-            </h1>
-            <p className="text-muted-foreground text-sm sm:text-base max-w-2xl">
-              Explore our collection by genre. Each page features top-rated films with ratings, fun facts, and streaming info.
-            </p>
+    <div className="relative flex flex-col min-h-screen">
+      <Navbar />
+      <main className="flex-grow w-full max-w-[1600px] mx-auto px-6 py-12 pt-24 flex flex-col gap-16">
+        <section className="flex flex-col gap-6">
+          <div className="flex items-end justify-between border-b border-bordercolor pb-4">
+            <div>
+              <h2 className="display-font text-4xl text-parchment">GENRE ARCHIVE</h2>
+              <div className="mono-font text-terracotta mt-1">CLASSIFICATION_MATRIX // ALL CATEGORIES</div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-            {GENRES.map((genre) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {GENRES.map((genre, i) => (
               <Link
                 key={genre.slug}
                 href={`/genre/${genre.slug}`}
-                className="group flex flex-col items-center justify-center p-5 sm:p-6 rounded-xl bg-card border border-border hover:border-primary/40 transition-all duration-200 hover:shadow-md"
+                className="spec-card p-4 cursor-pointer group flex flex-col"
               >
-                <GenreIcon slug={genre.slug} className="w-7 h-7 sm:w-8 sm:h-8 text-primary mb-2" />
-                <span className="text-sm sm:text-base font-medium text-foreground group-hover:text-primary transition-colors">
-                  {genre.name}
-                </span>
+                <div className="flex justify-between mb-6 mono-font text-parchment/40 group-hover:text-terracotta transition-colors">
+                  <span>CAT_{String(i + 1).padStart(2, '0')}</span>
+                  <span>{genre.slug.slice(0, 3)}</span>
+                </div>
+                <div className="flex justify-center py-6 border-y border-bordercolor relative">
+                  <GenreIcon slug={genre.slug} className="w-8 h-8 text-terracotta transform group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="mt-4 text-center">
+                  <div className="display-font text-xl text-parchment tracking-wide group-hover:text-terracotta transition-colors">
+                    {genre.name}
+                  </div>
+                </div>
               </Link>
             ))}
           </div>
-        </main>
-        <Footer />
-      </div>
+        </section>
+      </main>
+      <Footer />
     </div>
   );
 }

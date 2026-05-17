@@ -3,148 +3,140 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Star, Sparkles, ImageIcon, ArrowRight } from 'lucide-react';
+import { ImageIcon } from 'lucide-react';
 import { toSlug } from '@/lib/slug';
 import { getCachedMOTD, setCachedMOTD, type CachedDailyMovie } from '@/lib/motd-cache';
 
 interface MovieOfTheDayProps {
-  /** Server-fetched movie data (used as source of truth if cache is stale) */
   title: string;
   year: number;
   posterUrl: string;
   rating: number;
   genre: string;
   overview: string;
-  /** Today's date in UTC (YYYY-MM-DD) */
+  director: string;
+  runtime: number;
   date: string;
 }
 
-/**
- * Movie of the Day — premium featured section.
- * 
- * Behavior:
- * - Server provides today's movie (deterministic based on UTC date)
- * - Client caches it in IndexedDB
- * - On refresh, IndexedDB is checked first — if same date, use cached version
- * - This ensures the movie NEVER changes within the same day
- */
-export function MovieOfTheDay({ title, year, posterUrl, rating, genre, overview, date }: MovieOfTheDayProps) {
+export function MovieOfTheDay({ title, year, posterUrl, rating, genre, overview, director, runtime, date }: MovieOfTheDayProps) {
   const [movie, setMovie] = useState<CachedDailyMovie>({ title, year, posterUrl, rating, genre, overview, date });
 
   useEffect(() => {
     async function syncCache() {
       try {
-        // Check if we have a cached version for today
         const cached = await getCachedMOTD(date);
         if (cached) {
-          // Use cached version (ensures no change on refresh)
           setMovie(cached);
         } else {
-          // Cache the server-provided movie
           const toCache: CachedDailyMovie = { title, year, posterUrl, rating, genre, overview, date };
           await setCachedMOTD(toCache);
         }
-      } catch {
-        // IndexedDB unavailable — just use server data
-      }
+      } catch {}
     }
-
     syncCache();
   }, [title, year, posterUrl, rating, genre, overview, date]);
 
   const slug = toSlug(movie.title, movie.year);
+  const titleWords = movie.title.split(' ');
+  // Last word gets terracotta color
+  const lastWord = titleWords.pop() || '';
+  const mainTitle = titleWords.join(' ');
 
   return (
-    <section className="relative rounded-2xl overflow-hidden">
-      {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-background/60 to-transparent" />
-
-      {/* Backdrop image (blurred) */}
-      {movie.posterUrl && (
-        <div className="absolute inset-0 opacity-[0.08]">
-          <Image
-            src={movie.posterUrl}
-            alt=""
-            fill
-            className="object-cover blur-2xl scale-110"
-            aria-hidden="true"
-          />
+    <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 border-b border-bordercolor pb-16">
+      {/* Left — Image card */}
+      <div className="lg:col-span-5 spec-card p-4 relative">
+        <div className="flex justify-between mb-4 mono-font text-parchment/60">
+          <span>Movie of the Day</span>
+          <span>Daily Pick</span>
         </div>
-      )}
 
-      {/* Border glow effect */}
-      <div className="absolute inset-0 rounded-2xl ring-1 ring-primary/20" />
+        <Link href={`/movie/${slug}`} className="visual-preview w-full aspect-[2/3] max-w-[320px] bg-black/40 relative block mx-auto">
+          <div className="crosshair-corner cc-tl" />
+          <div className="crosshair-corner cc-tr" />
+          <div className="crosshair-corner cc-bl" />
+          <div className="crosshair-corner cc-br" />
+          {movie.posterUrl ? (
+            <Image
+              src={movie.posterUrl}
+              alt={movie.title}
+              fill
+              className="object-cover image-filter opacity-80"
+              sizes="(max-width: 1024px) 100vw, 40vw"
+              priority
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center z-10">
+              <ImageIcon className="w-16 h-16 text-parchment/20" />
+            </div>
+          )}
 
-      {/* Content */}
-      <div className="relative flex flex-col sm:flex-row gap-6 p-6 sm:p-8">
-        {/* Poster */}
-        <Link href={`/movie/${slug}`} className="shrink-0 mx-auto sm:mx-0 group">
-          <div className="relative w-[150px] sm:w-[180px] md:w-[200px] aspect-[2/3] rounded-xl overflow-hidden shadow-2xl ring-2 ring-primary/30 group-hover:ring-primary/60 transition-all duration-300 group-hover:scale-[1.02]">
-            {movie.posterUrl ? (
-              <Image
-                src={movie.posterUrl}
-                alt={`${movie.title} poster`}
-                fill
-                sizes="200px"
-                className="object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-muted flex items-center justify-center">
-                <ImageIcon className="w-10 h-10 text-muted-foreground" />
-              </div>
-            )}
-            {/* Shine overlay */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10" />
+          {/* Center badge */}
+          <div className="absolute z-20 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <div className="badge-circle bg-charcoal/80 backdrop-blur-sm">
+              <svg className="badge-text" viewBox="0 0 100 100">
+                <path id="circlePathHero" d="M 50, 50 m -37, 0 a 37,37 0 1,1 74,0 a 37,37 0 1,1 -74,0" fill="transparent" />
+                <text>
+                  <textPath xlinkHref="#circlePathHero">
+                    • FEATURED SELECTION • ARCHIVAL RECORD •
+                  </textPath>
+                </text>
+              </svg>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c17a5c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+            </div>
           </div>
         </Link>
+      </div>
 
-        {/* Info */}
-        <div className="flex-1 flex flex-col justify-center text-center sm:text-left">
-          {/* Badge */}
-          <div className="flex items-center justify-center sm:justify-start gap-2 mb-3">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/15 border border-primary/25 backdrop-blur-sm">
-              <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
-              <span className="text-xs font-bold uppercase tracking-widest text-primary">
-                Movie of the Day
-              </span>
-            </span>
+      {/* Right — Info */}
+      <div className="lg:col-span-7 flex flex-col justify-center pt-4 lg:pt-0 lg:pl-8">
+        <div className="mono-font text-terracotta mb-4 border-b border-bordercolor inline-block pb-2 w-fit">
+          Featured Today
+        </div>
+
+        <Link href={`/movie/${slug}`}>
+          <h1 className="display-font text-5xl md:text-6xl lg:text-[80px] text-parchment mb-6">
+            {mainTitle && <>{mainTitle}<br /></>}
+            <span className="text-terracotta">{lastWord}</span>
+          </h1>
+        </Link>
+
+        {/* Meta grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 border-y border-bordercolor py-6">
+          <div>
+            <div className="mono-font text-parchment/50 mb-1">Director</div>
+            <div className="display-font text-xl text-parchment tracking-wide">{director || '—'}</div>
           </div>
-
-          {/* Title */}
-          <Link href={`/movie/${slug}`} className="group">
-            <h3 className="font-headline text-2xl sm:text-3xl md:text-4xl text-foreground group-hover:text-primary transition-colors leading-tight">
-              {movie.title}
-            </h3>
-            <span className="text-muted-foreground text-base sm:text-lg mt-1 inline-block">
-              ({movie.year})
-            </span>
-          </Link>
-
-          {/* Meta */}
-          <div className="flex items-center justify-center sm:justify-start gap-4 mt-3">
-            {movie.rating > 0 && (
-              <span className="flex items-center gap-1.5 bg-card/80 backdrop-blur-sm border border-border rounded-lg px-2.5 py-1">
-                <Star className="w-4 h-4 fill-primary text-primary" />
-                <span className="text-sm font-bold">{movie.rating}</span>
-                <span className="text-xs text-muted-foreground">/10</span>
-              </span>
-            )}
-            <span className="text-sm text-muted-foreground font-medium">{movie.genre}</span>
+          <div>
+            <div className="mono-font text-parchment/50 mb-1">Year</div>
+            <div className="display-font text-xl text-parchment tracking-wide">{movie.year}</div>
           </div>
+          <div>
+            <div className="mono-font text-parchment/50 mb-1">Runtime</div>
+            <div className="display-font text-xl text-parchment tracking-wide">{runtime ? `${runtime} min` : '—'}</div>
+          </div>
+          <div>
+            <div className="mono-font text-parchment/50 mb-1">Rating</div>
+            <div className="display-font text-xl tracking-wide rating-badge inline-block px-2 py-0.5">{movie.rating.toFixed(1)}</div>
+          </div>
+        </div>
 
-          {/* Overview */}
-          <p className="text-sm sm:text-[15px] text-muted-foreground mt-4 leading-relaxed">
-            {movie.overview}
-          </p>
+        {/* Description */}
+        <p className="mono-font text-parchment/80 leading-relaxed text-[11px] max-w-2xl text-justify">
+          {movie.overview}
+        </p>
 
-          {/* CTA Button */}
+        {/* Buttons */}
+        <div className="mt-8 flex gap-4">
           <Link
             href={`/movie/${slug}`}
-            className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-all hover:gap-3 w-fit mx-auto sm:mx-0 shadow-lg shadow-primary/20"
+            className="border border-terracotta text-terracotta mono-font px-6 py-3 hover:bg-terracotta hover:text-charcoal transition-colors flex items-center gap-2"
           >
-            Explore this movie
-            <ArrowRight className="w-4 h-4" />
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+            View Details
           </Link>
         </div>
       </div>

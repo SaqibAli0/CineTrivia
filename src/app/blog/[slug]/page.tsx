@@ -47,7 +47,7 @@ export default async function BlogPostPage({ params }: PageProps) {
   const post = getPostBySlug(slug);
   if (!post) notFound();
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL  ;
 
   return (
     <div className="bg-background min-h-screen text-foreground pt-16">

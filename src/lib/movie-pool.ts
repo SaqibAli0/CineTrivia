@@ -64,11 +64,21 @@ function shuffle<T>(arr: T[]): T[] {
  * - If pool is under 100 → fetch more from TMDB, add to pool, then pick 20
  */
 export async function getMoviesFromPool(count: number = 40): Promise<TMDBMovie[]> {
+  const currentYear = new Date().getFullYear();
   let pool = getPool();
+
+  // Filter out future movies (no rating available yet)
+  function filterReleased(movies: TMDBMovie[]): TMDBMovie[] {
+    return movies.filter((m) => {
+      if (!m.release_date) return true;
+      const year = parseInt(m.release_date.split('-')[0], 10);
+      return year <= currentYear;
+    });
+  }
 
   // Pool is full — just shuffle and return
   if (pool && pool.isFull) {
-    return shuffle(pool.movies).slice(0, count);
+    return shuffle(filterReleased(pool.movies)).slice(0, count);
   }
 
   // Pool needs more movies — fetch multiple pages to fill quicker
@@ -92,12 +102,12 @@ export async function getMoviesFromPool(count: number = 40): Promise<TMDBMovie[]
     pool = { movies: trimmed, isFull, createdAt: pool?.createdAt ?? Date.now() };
     savePool(pool);
 
-    return shuffle(trimmed).slice(0, count);
+    return shuffle(filterReleased(trimmed)).slice(0, count);
   } catch (error) {
     console.error('Failed to fetch movies for pool:', error);
 
     if (pool && pool.movies.length > 0) {
-      return shuffle(pool.movies).slice(0, count);
+      return shuffle(filterReleased(pool.movies)).slice(0, count);
     }
 
     return [];

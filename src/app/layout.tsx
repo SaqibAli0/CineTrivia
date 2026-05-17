@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
-import { Inter, Playfair_Display } from 'next/font/google';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ScrollToTop } from "@/components/scroll-to-top";
 
 const inter = Inter({
   subsets: ['latin'],
@@ -11,13 +12,13 @@ const inter = Inter({
   display: 'swap',
 });
 
-const playfair = Playfair_Display({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
-  variable: '--font-playfair',
+  variable: '--font-jetbrains',
   display: 'swap',
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || '';
 
 export const metadata: Metadata = {
   title: {
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
     template: '%s | CineTrivia',
   },
   description: 'Discover movies with personalized recommendations, fun facts, and trivia. Find where to watch, explore similar films, and get suggestions based on your mood.',
-  metadataBase: new URL(SITE_URL),
+  metadataBase: SITE_URL ? new URL(SITE_URL) : undefined,
   alternates: {
     canonical: '/',
   },
@@ -94,7 +95,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${playfair.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`dark ${inter.variable} ${jetbrainsMono.variable}`}>
       <head>
         <script
           type="application/ld+json"
@@ -105,10 +106,11 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
         />
       </head>
-      <body className="font-body antialiased">
+      <body className="relative flex flex-col min-h-screen antialiased">
         <ThemeProvider>
           {children}
           <Toaster />
+          <ScrollToTop />
         </ThemeProvider>
         {/* Google AdSense — only loads when configured */}
         {adsenseClientId && (

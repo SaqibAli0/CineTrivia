@@ -16,6 +16,8 @@ export interface DailyMovie {
   rating: number;
   genre: string;
   overview: string;
+  director: string;
+  runtime: number;
   /** Date string (YYYY-MM-DD UTC) this movie is for */
   date: string;
 }
@@ -73,6 +75,22 @@ export async function getMovieOfTheDay(): Promise<DailyMovie | null> {
     const movie = results[indexInPage % results.length];
     const year = movie.release_date ? parseInt(movie.release_date.split('-')[0], 10) : 0;
 
+    // Fetch movie details for director and runtime
+    let director = '';
+    let runtime = 0;
+    try {
+      const detailUrl = new URL(`${TMDB_BASE_URL}/movie/${movie.id}`);
+      detailUrl.searchParams.set('api_key', apiKey);
+      detailUrl.searchParams.set('append_to_response', 'credits');
+      const detailRes = await fetch(detailUrl.toString(), { next: { revalidate: 86400 } });
+      if (detailRes.ok) {
+        const detail = await detailRes.json();
+        runtime = detail.runtime || 0;
+        const directorEntry = detail.credits?.crew?.find((c: any) => c.job === 'Director');
+        director = directorEntry?.name || '';
+      }
+    } catch {}
+
     return {
       title: movie.title,
       year,
@@ -80,6 +98,8 @@ export async function getMovieOfTheDay(): Promise<DailyMovie | null> {
       rating: Math.round(movie.vote_average * 10) / 10,
       genre: getGenreLabel(movie.genre_ids || []),
       overview: movie.overview || '',
+      director,
+      runtime,
       date: today,
     };
   } catch (error) {

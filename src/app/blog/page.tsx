@@ -1,113 +1,63 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { Film, ArrowLeft, Calendar, Tag } from 'lucide-react';
+import { Calendar, Tag } from 'lucide-react';
 import { getAllPosts } from '@/lib/blog';
 import { Footer } from '@/components/footer';
 import { Navbar } from '@/components/navbar';
 
 export const metadata: Metadata = {
   title: 'Blog — Movie Lists, Recommendations & Trivia',
-  description: 'Discover curated movie lists, personalized recommendations, and film trivia. Find your next favorite movie with our expert guides.',
+  description: 'Discover curated movie lists, personalized recommendations, and film trivia.',
   alternates: { canonical: '/blog' },
-  openGraph: {
-    title: 'CineTrivia Blog — Movie Lists & Recommendations',
-    description: 'Curated movie lists, recommendations, and trivia from CineTrivia.',
-    type: 'website',
-  },
 };
 
 export default function BlogPage() {
   const posts = getAllPosts();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
-
-  const collectionSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: 'CineTrivia Blog',
-    description: 'Curated movie lists, personalized recommendations, and film trivia.',
-    url: `${siteUrl}/blog`,
-    mainEntity: {
-      '@type': 'ItemList',
-      numberOfItems: posts.length,
-      itemListElement: posts.map((post, index) => ({
-        '@type': 'ListItem',
-        position: index + 1,
-        url: `${siteUrl}/blog/${post.slug}`,
-        name: post.title,
-      })),
-    },
-  };
 
   return (
-    <div className="bg-background min-h-screen text-foreground pt-16">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
-      />
-      <div className="container mx-auto px-4 sm:px-6 md:px-8">
-        <Navbar />
-        <main className="py-8 sm:py-12">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
-          </Link>
-
-          <div className="mb-10">
-            <h1 className="font-headline text-3xl sm:text-4xl md:text-5xl text-foreground mb-3">
-              CineTrivia Blog
-            </h1>
-            <p className="text-muted-foreground text-sm sm:text-base max-w-2xl">
-              Curated movie lists, personalized recommendations, and film trivia to help you find your next favorite movie.
-            </p>
+    <div className="relative flex flex-col min-h-screen">
+      <Navbar />
+      <main className="flex-grow w-full max-w-[1600px] mx-auto px-6 py-12 pt-24 flex flex-col gap-16">
+        <section className="flex flex-col gap-6">
+          <div className="flex items-end justify-between border-b border-bordercolor pb-4">
+            <div>
+              <h1 className="display-font text-4xl text-parchment">SYSTEM LOG</h1>
+              <div className="mono-font text-terracotta mt-1">BLOG_ENTRIES // TOTAL: {posts.length}</div>
+            </div>
           </div>
 
-          <div className="grid gap-6 sm:gap-8">
-            {posts.map((post) => (
-              <article key={post.slug} className="group">
-                <Link
-                  href={`/blog/${post.slug}`}
-                  className="block p-5 sm:p-6 rounded-xl bg-card border border-border hover:border-primary/40 transition-all duration-200"
-                >
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-medium">
-                      <Tag className="w-3 h-3" />
-                      {post.category}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(post.publishedAt).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                    </span>
-                  </div>
-                  <h2 className="font-headline text-lg sm:text-xl text-foreground group-hover:text-primary transition-colors mb-2">
-                    {post.title}
-                  </h2>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {post.description}
-                  </p>
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {post.tags.slice(0, 4).map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </Link>
-              </article>
+          <div className="flex flex-col gap-4">
+            {posts.map((post, i) => (
+              <Link
+                key={post.slug}
+                href={`/blog/${post.slug}`}
+                className="spec-card p-5 group cursor-pointer block"
+              >
+                <div className="flex justify-between mb-3 mono-font text-parchment/50 border-b border-bordercolor pb-2">
+                  <span>LOG_{String(i + 1).padStart(3, '0')}</span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {new Date(post.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="mono-font text-terracotta border border-terracotta/40 px-2 py-0.5 flex items-center gap-1">
+                    <Tag className="w-2.5 h-2.5" />
+                    {post.category.toUpperCase()}
+                  </span>
+                </div>
+                <h2 className="display-font text-2xl text-parchment group-hover:text-terracotta transition-colors mb-2">
+                  {post.title.toUpperCase()}
+                </h2>
+                <p className="mono-font text-parchment/60 text-[11px] leading-relaxed line-clamp-2">
+                  {post.description.toUpperCase()}
+                </p>
+              </Link>
             ))}
           </div>
-        </main>
-        <Footer />
-      </div>
+        </section>
+      </main>
+      <Footer />
     </div>
   );
 }

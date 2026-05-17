@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Star, Film, ImageIcon } from 'lucide-react';
+import { ImageIcon, Film } from 'lucide-react';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import { GenreIcon } from '@/components/genre-icon';
@@ -16,16 +16,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const genre = getGenreBySlug(slug);
   if (!genre) return { title: 'Genre Not Found' };
-
-  const title = `Best ${genre.name} Movies — Top Rated ${genre.name} Films`;
-  const description = `Discover the best ${genre.name.toLowerCase()} movies. Browse top-rated ${genre.name.toLowerCase()} films with ratings, fun facts, and where to watch.`;
-
   return {
-    title,
-    description,
+    title: `Best ${genre.name} Movies — Top Rated Films`,
+    description: `Discover the best ${genre.name.toLowerCase()} movies with ratings, fun facts, and where to watch.`,
     alternates: { canonical: `/genre/${slug}` },
-    keywords: [`best ${genre.name.toLowerCase()} movies`, `top ${genre.name.toLowerCase()} films`, `${genre.name.toLowerCase()} movie recommendations`, `${genre.name.toLowerCase()} movies to watch`],
-    openGraph: { title, description, type: 'website', siteName: 'CineTrivia' },
   };
 }
 
@@ -37,113 +31,63 @@ export default async function GenrePage({ params }: PageProps) {
   const { slug } = await params;
   const genre = getGenreBySlug(slug);
   if (!genre) notFound();
-
   const movies = await getMoviesByGenre(genre.id);
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
-
-  const breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
-      { '@type': 'ListItem', position: 2, name: 'Genres', item: `${siteUrl}/genre` },
-      { '@type': 'ListItem', position: 3, name: `${genre.name} Movies` },
-    ],
-  };
-
-  const itemListSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'ItemList',
-    name: `Best ${genre.name} Movies`,
-    numberOfItems: movies.length,
-    itemListElement: movies.slice(0, 10).map((movie, index) => ({
-      '@type': 'ListItem',
-      position: index + 1,
-      url: `${siteUrl}/movie/${movie.slug}`,
-      name: movie.title,
-    })),
-  };
-
   return (
-    <div className="bg-background min-h-screen text-foreground pt-16">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
-      />
-      <div className="container mx-auto px-4 sm:px-6 md:px-8">
-        <Navbar />
-        <main className="py-8 sm:py-12">
-          <Link
-            href="/genre"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            All Genres
-          </Link>
-
-          <div className="mb-8">
-            <h1 className="font-headline text-3xl sm:text-4xl text-foreground mb-2 flex items-center gap-3">
-              <GenreIcon slug={genre.slug} className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
-              {genre.name} Movies
-            </h1>
-            <p className="text-muted-foreground text-sm sm:text-base max-w-2xl">
-              {genre.description}
-            </p>
+    <div className="relative flex flex-col min-h-screen">
+      <Navbar />
+      <main className="flex-grow w-full max-w-[1600px] mx-auto px-6 py-12 pt-24 flex flex-col gap-16">
+        <section className="flex flex-col gap-6">
+          <div className="flex items-end justify-between border-b border-bordercolor pb-4">
+            <div className="flex items-center gap-4">
+              <GenreIcon slug={genre.slug} className="w-8 h-8 text-terracotta" />
+              <div>
+                <h1 className="display-font text-4xl text-parchment">{genre.name} Archive</h1>
+                <div className="mono-font text-terracotta mt-1">Category: {genre.slug} // Records: {movies.length}</div>
+              </div>
+            </div>
           </div>
 
           {movies.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
-              {movies.map((movie) => (
-                <Link
-                  key={movie.id}
-                  href={`/movie/${movie.slug}`}
-                  className="group block"
-                >
-                  <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-muted border border-border group-hover:border-primary/40 transition-all duration-300 group-hover:shadow-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {movies.map((movie, i) => (
+                <Link key={movie.id} href={`/movie/${movie.slug}`} className="spec-card p-5 group cursor-pointer block">
+                  <div className="flex justify-between mb-4 mono-font text-parchment/50 border-b border-bordercolor pb-2">
+                    <span>ID: {String(i + 1).padStart(3, '0')}</span>
+                    <span>{movie.year}</span>
+                  </div>
+                  <div className="visual-preview aspect-[2/3] bg-black/30 mb-4 relative">
+                    <div className="crosshair-corner cc-tl" />
+                    <div className="crosshair-corner cc-tr" />
+                    <div className="crosshair-corner cc-bl" />
+                    <div className="crosshair-corner cc-br" />
                     {movie.posterUrl ? (
-                      <Image
-                        src={movie.posterUrl}
-                        alt={`${movie.title} (${movie.year}) poster`}
-                        fill
-                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
+                      <Image src={movie.posterUrl} alt={movie.title} fill sizes="(max-width: 640px) 100vw, 25vw" className="object-cover image-filter" />
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                      </div>
-                    )}
-                    {movie.rating > 0 && (
-                      <div className="absolute top-2 right-2 flex items-center gap-1 bg-background/80 backdrop-blur-sm rounded-md px-1.5 py-0.5">
-                        <Star className="w-3 h-3 fill-primary text-primary" />
-                        <span className="text-[11px] font-semibold">{movie.rating}</span>
+                      <div className="absolute inset-0 flex items-center justify-center z-10">
+                        <ImageIcon className="w-10 h-10 text-parchment/20" />
                       </div>
                     )}
                   </div>
-                  <div className="mt-2">
-                    <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate">
-                      {movie.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{movie.year}</p>
+                  <h3 className="display-font text-2xl text-parchment mb-1 group-hover:text-terracotta transition-colors truncate">
+                    {movie.title}
+                  </h3>
+                  <div className="flex justify-between items-center mt-2 pt-2 border-t border-bordercolor border-dashed">
+                    <span className="mono-font text-parchment/60">{movie.year}</span>
+                    {movie.rating > 0 && <span className="mono-font text-terracotta">R // {movie.rating}</span>}
                   </div>
                 </Link>
               ))}
             </div>
           ) : (
-            <div className="text-center py-16">
-              <Film className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium text-foreground">Loading movies...</p>
-              <p className="text-muted-foreground text-sm">Check back shortly.</p>
+            <div className="text-center py-20 border border-bordercolor">
+              <Film className="w-10 h-10 text-parchment/30 mx-auto mb-4" />
+              <p className="mono-font text-parchment">RETRIEVING RECORDS...</p>
             </div>
           )}
-        </main>
-        <Footer />
-      </div>
+        </section>
+      </main>
+      <Footer />
     </div>
   );
 }

@@ -1,63 +1,115 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { getMovieFunFact } from "@/app/actions";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, RefreshCw } from "lucide-react";
 
 export function FunFactButton({ movieTitle }: { movieTitle: string }) {
-  const [fact, setFact] = useState("");
+  const [facts, setFacts] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
-  const handleGetFact = async () => {
+  const loadFacts = async () => {
     setIsLoading(true);
-    setFact("");
     setError("");
+    const newFacts: string[] = [];
+
     try {
-      const result = await getMovieFunFact({ movieTitle, skipCache: hasLoadedOnce });
-      setFact(result.funFact);
-      setHasLoadedOnce(true);
+      // Fetch 4 fun facts in parallel
+      const results = await Promise.allSettled([
+        getMovieFunFact({ movieTitle, skipCache: facts.length > 0 }),
+        getMovieFunFact({ movieTitle, skipCache: true }),
+        getMovieFunFact({ movieTitle, skipCache: true }),
+        getMovieFunFact({ movieTitle, skipCache: true }),
+      ]);
+
+      for (const result of results) {
+        if (result.status === "fulfilled" && result.value.funFact) {
+          newFacts.push(result.value.funFact);
+        }
+      }
+
+      if (newFacts.length === 0) {
+        setError("Could not fetch fun facts. Please try again.");
+      } else {
+        setFacts(newFacts);
+      }
     } catch (e: any) {
-      setError(e.message || "Could not fetch a fun fact. Please try again.");
+      setError(e.message || "Could not fetch fun facts.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Dialog onOpenChange={(open) => { if (!open) { setFact(""); setError(""); setHasLoadedOnce(false); } }}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="rounded-full">
-          <Sparkles className="mr-2 h-4 w-4" />
-          Fun Fact
+    <Sheet onOpenChange={(open) => { if (!open) { setFacts([]); setError(""); } }}>
+      <SheetTrigger asChild>
+        <Button variant="outline" onClick={() => { if (facts.length === 0) loadFacts(); }}>
+          <Sparkles className="mr-1" />
+          Fun Facts
         </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-[90vw] sm:max-w-[425px] rounded-2xl sm:rounded-[2rem]" onOpenAutoFocus={handleGetFact}>
-        <DialogHeader>
-          <DialogTitle className="font-headline text-xl sm:text-2xl">Fun Fact about {movieTitle}</DialogTitle>
-        </DialogHeader>
-        <div className="min-h-[100px] flex items-center justify-center px-2">
-          {isLoading && <Loader2 className="h-8 w-8 animate-spin text-primary" />}
-          {error && <p className="text-destructive text-center text-sm">{error}</p>}
-          {fact && <p className="text-center text-base leading-relaxed">{fact}</p>}
+      </SheetTrigger>
+      <SheetContent side="right" className="w-full sm:w-[480px] bg-charcoal border-l border-bordercolor p-0 overflow-y-auto">
+        <SheetTitle className="sr-only">{movieTitle} Fun Facts</SheetTitle>
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-bordercolor sticky top-0 bg-charcoal z-10">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="display-font text-2xl text-parchment">{movieTitle}</div>
+              <p className="mono-font text-terracotta mt-1">Trivia & behind the scenes</p>
+            </div>
+          </div>
         </div>
-        <DialogFooter>
-          <Button onClick={handleGetFact} disabled={isLoading} className="rounded-full">
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-            Get Another Fact
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+
+        {/* Content */}
+        <div className="p-6 space-y-4">
+          {isLoading && (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="w-6 h-6 animate-spin text-terracotta mb-3" />
+              <p className="mono-font text-parchment/60">RETRIEVING FACTS...</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="spec-card p-4 text-center">
+              <p className="mono-font text-red-400 text-[11px]">{error}</p>
+            </div>
+          )}
+
+          {!isLoading && facts.length > 0 && (
+            <>
+              <div className="grid grid-cols-1 gap-3">
+                {facts.map((fact, i) => (
+                  <div key={i} className="spec-card p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="mono-font text-terracotta shrink-0 mt-0.5">
+                        #{String(i + 1).padStart(2, '0')}
+                      </div>
+                      <p className="mono-font text-parchment/80 text-[11px] leading-relaxed">
+                        {fact}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Refresh button */}
+              <div className="pt-4 border-t border-bordercolor">
+                <Button
+                  onClick={loadFacts}
+                  disabled={isLoading}
+                  className="w-full"
+                >
+                  {isLoading ? <Loader2 className="mr-1 animate-spin" /> : <RefreshCw className="mr-1" />}
+                  Refresh Facts
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
