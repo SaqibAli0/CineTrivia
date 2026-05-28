@@ -16,6 +16,20 @@ import { CastCarousel } from '@/components/cast-carousel';
 import { SocialShare } from '@/components/social-share';
 import { AdSenseSlot } from '@/components/adsense-slot';
 
+// Pre-generate the top popular movie pages at build time so Google gets static HTML
+export async function generateStaticParams() {
+  try {
+    const { getPopularMoviesList } = await import('@/lib/tmdb-details');
+    const movies = await getPopularMoviesList(10); // ~200 movies
+    return movies.map((movie) => ({ slug: movie.slug }));
+  } catch {
+    return [];
+  }
+}
+
+// Revalidate every 24 hours — pages stay static but refresh daily
+export const revalidate = 86400;
+
 interface PageProps {
   params: Promise<{ slug: string }>;
 }

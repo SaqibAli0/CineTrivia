@@ -11,8 +11,8 @@ import { getMovieOfTheDay } from "@/lib/movie-of-the-day";
 import { toMovie, fallbackMovies } from "@/lib/movies";
 import { GENRES } from "@/lib/genres";
 
-// Force dynamic rendering so the shuffle produces a fresh order on every request
-export const dynamic = 'force-dynamic';
+// Revalidate every hour — keeps content fresh for SEO while allowing static generation
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: 'CineTrivia — Movie Recommendations, Fun Facts & Where to Watch',
