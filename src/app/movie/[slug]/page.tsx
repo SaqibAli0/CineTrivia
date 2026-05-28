@@ -16,16 +16,21 @@ import { CastCarousel } from '@/components/cast-carousel';
 import { SocialShare } from '@/components/social-share';
 import { AdSenseSlot } from '@/components/adsense-slot';
 
-// Pre-generate the top popular movie pages at build time so Google gets static HTML
+// Pre-generate a small batch of popular movie pages at build time.
+// The rest will be generated on-demand when first visited and cached.
 export async function generateStaticParams() {
   try {
     const { getPopularMoviesList } = await import('@/lib/tmdb-details');
-    const movies = await getPopularMoviesList(10); // ~200 movies
+    // Only pre-build 2 pages (~40 movies) to avoid TMDB rate limits during build
+    const movies = await getPopularMoviesList(2);
     return movies.map((movie) => ({ slug: movie.slug }));
   } catch {
     return [];
   }
 }
+
+// Allow on-demand generation for slugs not in generateStaticParams
+export const dynamicParams = true;
 
 // Revalidate every 24 hours — pages stay static but refresh daily
 export const revalidate = 86400;

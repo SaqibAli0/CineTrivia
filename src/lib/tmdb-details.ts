@@ -86,13 +86,25 @@ async function fetchTMDB<T>(endpoint: string, params: Record<string, string> = {
     url.searchParams.set(key, value);
   }
 
-  const response = await fetch(url.toString(), { next: { revalidate: 3600 } });
+  // Retry up to 3 times on rate limit (429)
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const response = await fetch(url.toString(), { next: { revalidate: 3600 } });
 
-  if (!response.ok) {
-    throw new Error(`TMDB request failed: ${response.status}`);
+    if (response.status === 429) {
+      // Wait before retrying — exponential backoff
+      const waitMs = (attempt + 1) * 1500;
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
+      continue;
+    }
+
+    if (!response.ok) {
+      throw new Error(`TMDB request failed: ${response.status}`);
+    }
+
+    return response.json();
   }
 
-  return response.json();
+  throw new Error(`TMDB request failed: 429 (rate limited after retries)`);
 }
 
 /**
