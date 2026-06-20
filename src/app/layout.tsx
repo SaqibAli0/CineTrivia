@@ -114,9 +114,9 @@ export default function RootLayout({
         <WebVitals />
         {/* Google AdSense — only loads when configured */}
         {adsenseClientId && (
-          <Script
+          <script
+            async
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
-            strategy="afterInteractive"
             crossOrigin="anonymous"
           />
         )}

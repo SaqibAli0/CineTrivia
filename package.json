@@ -55,6 +55,7 @@
     "remixicon": "^4.9.1",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
+    "web-vitals": "^5.3.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
