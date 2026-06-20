@@ -109,3 +109,21 @@ export function getAffiliateUrl(
   const q = encodeURIComponent(`watch ${movieTitle} ${year} on ${providerName}`);
   return `https://www.google.com/search?q=${q}`;
 }
+
+/**
+ * Track an affiliate link click via GA4 custom event.
+ * Call this in onClick handlers for affiliate links.
+ * Only fires if GA4 is loaded (gtag exists on window).
+ */
+export function trackAffiliateClick(providerName: string, movieTitle: string, year: number): void {
+  if (typeof window !== 'undefined') {
+    const w = window as unknown as { gtag?: (...args: unknown[]) => void };
+    if (typeof w.gtag === 'function') {
+      w.gtag('event', 'affiliate_click', {
+        provider: providerName,
+        movie_title: movieTitle,
+        movie_year: year,
+      });
+    }
+  }
+}

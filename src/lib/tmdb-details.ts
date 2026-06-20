@@ -59,6 +59,16 @@ export interface MovieDetails {
   language: string;
   budget: number;
   revenue: number;
+  contentRating: string | null;
+}
+
+export interface MovieTrailer {
+  name: string;
+  key: string;
+  site: string;
+  embedUrl: string;
+  thumbnailUrl: string;
+  publishedAt: string;
 }
 
 export interface SimilarMovie {
@@ -132,9 +142,12 @@ export async function findMovieId(title: string, year: number): Promise<number |
  */
 export async function getMovieDetails(movieId: number): Promise<MovieDetails | null> {
   try {
-    const [details, credits] = await Promise.all([
+    const [details, credits, releaseDates] = await Promise.all([
       fetchTMDB<TMDBMovieDetails>(`/movie/${movieId}`),
       fetchTMDB<TMDBCredits>(`/movie/${movieId}/credits`),
+      fetchTMDB<{ results: { iso_3166_1: string; release_dates: { certification: string; type: number }[] }[] }>(
+        `/movie/${movieId}/release_dates`
+      ),
     ]);
 
     const year = details.release_date ? parseInt(details.release_date.split('-')[0], 10) : 0;
@@ -145,6 +158,16 @@ export async function getMovieDetails(movieId: number): Promise<MovieDetails | n
       profileUrl: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : '',
     }));
     const genres = details.genres.map((g) => g.name);
+
+    // Extract US content rating (e.g., "PG-13", "R")
+    let contentRating: string | null = null;
+    const usRelease = releaseDates.results.find((r) => r.iso_3166_1 === 'US');
+    if (usRelease) {
+      // Prefer theatrical release (type 3), then any non-empty certification
+      const theatrical = usRelease.release_dates.find((rd) => rd.type === 3 && rd.certification);
+      const anyRated = usRelease.release_dates.find((rd) => rd.certification);
+      contentRating = theatrical?.certification || anyRated?.certification || null;
+    }
 
     return {
       id: details.id,
@@ -167,9 +190,44 @@ export async function getMovieDetails(movieId: number): Promise<MovieDetails | n
       language: details.spoken_languages[0]?.english_name ?? 'English',
       budget: details.budget || 0,
       revenue: details.revenue || 0,
+      contentRating,
     };
   } catch (error) {
     console.error('Failed to fetch movie details:', error);
+    return null;
+  }
+}
+
+/**
+ * Get the official YouTube trailer for a movie.
+ * Returns the best trailer found (Official Trailer > any Trailer > any Teaser).
+ */
+export async function getMovieTrailer(movieId: number): Promise<MovieTrailer | null> {
+  try {
+    const data = await fetchTMDB<{
+      results: { name: string; key: string; site: string; type: string; official: boolean; published_at: string }[];
+    }>(`/movie/${movieId}/videos`);
+
+    // Filter to YouTube videos only
+    const youtubeVideos = data.results.filter((v) => v.site === 'YouTube');
+    if (youtubeVideos.length === 0) return null;
+
+    // Priority: official trailer > any trailer > teaser
+    const officialTrailer = youtubeVideos.find((v) => v.type === 'Trailer' && v.official);
+    const anyTrailer = youtubeVideos.find((v) => v.type === 'Trailer');
+    const teaser = youtubeVideos.find((v) => v.type === 'Teaser');
+    const video = officialTrailer || anyTrailer || teaser || youtubeVideos[0];
+
+    return {
+      name: video.name,
+      key: video.key,
+      site: video.site,
+      embedUrl: `https://www.youtube.com/embed/${video.key}`,
+      thumbnailUrl: `https://img.youtube.com/vi/${video.key}/hqdefault.jpg`,
+      publishedAt: video.published_at ? video.published_at.split('T')[0] : '',
+    };
+  } catch (error) {
+    console.error('Failed to fetch movie trailer:', error);
     return null;
   }
 }

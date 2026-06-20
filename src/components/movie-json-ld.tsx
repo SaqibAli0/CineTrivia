@@ -1,18 +1,20 @@
-import type { MovieDetails } from '@/lib/tmdb-details';
+import type { MovieDetails, MovieTrailer } from '@/lib/tmdb-details';
 
 interface MovieJsonLdProps {
   movie: MovieDetails;
   slug: string;
+  trailer?: MovieTrailer | null;
 }
 
 /**
  * JSON-LD structured data for movie pages.
- * Helps Google show rich results (star ratings, poster, etc.)
+ * Outputs Movie schema (+ AggregateRating) and VideoObject for trailers.
+ * FAQ schema removed — Google deprecated FAQ rich results on May 7, 2026.
  */
-export function MovieJsonLd({ movie, slug }: MovieJsonLdProps) {
+export function MovieJsonLd({ movie, slug, trailer }: MovieJsonLdProps) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
 
-  const jsonLd = {
+  const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Movie',
     name: movie.title,
@@ -45,42 +47,23 @@ export function MovieJsonLd({ movie, slug }: MovieJsonLdProps) {
     })),
   };
 
-  // FAQ schema — Google shows these as expandable Q&A in search results
-  const faqQuestions = [
-    {
-      question: `Where can I watch ${movie.title}?`,
-      answer: `Visit the ${movie.title} page on CineTrivia to find current streaming platforms, rental options, and purchase links for ${movie.title} (${movie.year}).`,
-    },
-    {
-      question: `What is ${movie.title} about?`,
-      answer: movie.overview,
-    },
-    ...(movie.director ? [{
-      question: `Who directed ${movie.title}?`,
-      answer: `${movie.title} was directed by ${movie.director}${movie.year ? ` and released in ${movie.year}` : ''}.`,
-    }] : []),
-    ...(movie.runtime && movie.runtime > 0 ? [{
-      question: `How long is ${movie.title}?`,
-      answer: `${movie.title} has a runtime of ${Math.floor(movie.runtime / 60)} hours and ${movie.runtime % 60} minutes (${movie.runtime} minutes total).`,
-    }] : []),
-    ...(movie.cast.length > 0 ? [{
-      question: `Who stars in ${movie.title}?`,
-      answer: `The cast of ${movie.title} includes ${movie.cast.slice(0, 5).map(c => c.name).join(', ')}${movie.cast.length > 5 ? ' and more' : ''}.`,
-    }] : []),
-  ];
+  // Add contentRating if available (e.g., "PG-13", "R")
+  if (movie.contentRating) {
+    jsonLd.contentRating = movie.contentRating;
+  }
 
-  const faqSchema = {
+  // VideoObject schema for trailers — earns video rich results in Google
+  // Required: name, thumbnailUrl, uploadDate, and either contentUrl or embedUrl
+  const videoSchema = trailer ? {
     '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqQuestions.map((faq) => ({
-      '@type': 'Question',
-      name: faq.question,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: faq.answer,
-      },
-    })),
-  };
+    '@type': 'VideoObject',
+    name: trailer.name,
+    description: `Official trailer for ${movie.title} (${movie.year})`,
+    thumbnailUrl: trailer.thumbnailUrl,
+    uploadDate: trailer.publishedAt,
+    embedUrl: trailer.embedUrl,
+    duration: undefined, // TMDB doesn't provide trailer duration
+  } : null;
 
   return (
     <>
@@ -88,10 +71,12 @@ export function MovieJsonLd({ movie, slug }: MovieJsonLdProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-      />
+      {videoSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(videoSchema) }}
+        />
+      )}
     </>
   );
 }

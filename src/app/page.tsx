@@ -41,43 +41,7 @@ export default async function Home() {
 
   return (
     <div className="bg-background min-h-screen text-foreground pt-16">
-      {/* Homepage FAQ Schema for rich results */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'FAQPage',
-            mainEntity: [
-              {
-                '@type': 'Question',
-                name: 'What is CineTrivia?',
-                acceptedAnswer: { '@type': 'Answer', text: 'CineTrivia is a free movie recommendation platform. Tell us your mood or preferred genres, and we\'ll suggest the perfect movie for you — complete with fun facts, cast info, ratings, and links to where you can watch it.' },
-              },
-              {
-                '@type': 'Question',
-                name: 'How do I get a movie recommendation?',
-                acceptedAnswer: { '@type': 'Answer', text: 'Simply select one or more genres (like Action, Comedy, or Horror) and optionally choose a mood (like Exciting or Relaxing). Click "Get Recommendation" and we\'ll instantly suggest a movie tailored to your preferences.' },
-              },
-              {
-                '@type': 'Question',
-                name: 'Is CineTrivia free to use?',
-                acceptedAnswer: { '@type': 'Answer', text: 'Yes, CineTrivia is completely free. You can get unlimited movie recommendations, browse our movie database, read fun facts, and find streaming links — all without creating an account.' },
-              },
-              {
-                '@type': 'Question',
-                name: 'Where does the movie data come from?',
-                acceptedAnswer: { '@type': 'Answer', text: 'Our movie information is sourced from trusted public databases, providing up-to-date details on ratings, cast, crew, streaming availability, and more for thousands of films.' },
-              },
-              {
-                '@type': 'Question',
-                name: 'Can I find where to watch a specific movie?',
-                acceptedAnswer: { '@type': 'Answer', text: 'Yes! Every movie page on CineTrivia shows current streaming platforms, rental options, and purchase links so you can start watching immediately.' },
-              },
-            ],
-          }),
-        }}
-      />
+      {/* FAQ schema removed — Google deprecated FAQ rich results on May 7, 2026 */}
       <div className="container mx-auto px-4 sm:px-6 md:px-8">
         <Navbar />
         <main className="space-y-6 sm:space-y-8 md:space-y-10">

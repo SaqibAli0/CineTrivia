@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Clock, Star, Film, Globe, Sparkles, Calendar, DollarSign, TrendingUp, ArrowRight, Clapperboard } from 'lucide-react';
 import { fromSlug } from '@/lib/slug';
-import { findMovieId, getMovieDetails, getSimilarMovies, getWatchProviders } from '@/lib/tmdb-details';
+import { findMovieId, getMovieDetails, getSimilarMovies, getWatchProviders, getMovieTrailer } from '@/lib/tmdb-details';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
@@ -53,8 +53,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title,
     description,
     alternates: { canonical: `/movie/${slug}` },
-    openGraph: { title: `${title} | CineTrivia`, description, type: 'video.movie', images: movie.posterUrl ? [{ url: movie.posterUrl, width: 500, height: 750 }] : [], siteName: 'CineTrivia' },
-    twitter: { card: 'summary_large_image', title: `${movie.title} (${movie.year}) | CineTrivia`, description, images: movie.posterUrl ? [movie.posterUrl] : [] },
+    openGraph: { title: `${title} | CineTrivia`, description, type: 'video.movie', siteName: 'CineTrivia' },
+    twitter: { card: 'summary_large_image', title: `${movie.title} (${movie.year}) | CineTrivia`, description },
   };
 }
 
@@ -71,10 +71,11 @@ export default async function MoviePage({ params }: PageProps) {
   if (!parsed) notFound();
   const movieId = await findMovieId(parsed.title, parsed.year);
   if (!movieId) notFound();
-  const [movie, similarMovies, watchProviders] = await Promise.all([
+  const [movie, similarMovies, watchProviders, trailer] = await Promise.all([
     getMovieDetails(movieId),
     getSimilarMovies(movieId, 8),
     getWatchProviders(movieId),
+    getMovieTrailer(movieId),
   ]);
   if (!movie) notFound();
 
@@ -94,7 +95,7 @@ export default async function MoviePage({ params }: PageProps) {
 
   return (
     <div className="bg-background min-h-screen text-foreground pt-16">
-      <MovieJsonLd movie={movie} slug={slug} />
+      <MovieJsonLd movie={movie} slug={slug} trailer={trailer} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}

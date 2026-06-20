@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { CirclePlay } from 'lucide-react';
 import type { WatchProvider } from '@/lib/tmdb-details';
-import { getAffiliateUrl } from '@/lib/affiliate';
+import { getAffiliateUrl, trackAffiliateClick } from '@/lib/affiliate';
 
 interface WatchButtonsProps {
   movieTitle: string;
@@ -32,6 +32,7 @@ export function WatchButtons({ movieTitle, year, providers }: WatchButtonsProps)
               href={getAffiliateUrl(provider.name, movieTitle, year)}
               target="_blank"
               rel="noopener sponsored"
+              onClick={() => trackAffiliateClick(provider.name, movieTitle, year)}
               className="group flex items-center gap-3 h-12 px-3 rounded-lg bg-card border border-border hover:border-primary/40 transition-all duration-200"
             >
               {provider.logoUrl && (
@@ -50,7 +51,7 @@ export function WatchButtons({ movieTitle, year, providers }: WatchButtonsProps)
           ))}
         </div>
         <p className="text-[10px] text-muted-foreground/60 mt-3">
-          Availability may vary by region. Some links are affiliate links — we may earn a commission at no extra cost to you.
+          As an Amazon Associate I earn from qualifying purchases. Availability may vary by region. Some links are affiliate links — we may earn a commission at no extra cost to you.
         </p>
       </div>
     );
