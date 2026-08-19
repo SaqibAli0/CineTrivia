@@ -44,6 +44,11 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       services: checks,
     },
-    { status }
+    {
+      status,
+      headers: {
+        'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
+      },
+    }
   );
 }

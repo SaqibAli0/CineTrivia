@@ -62,7 +62,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let moviePages: MetadataRoute.Sitemap = [];
 
   try {
-    const movies = await getPopularMoviesList(25); // 25 pages = ~500 movies for broader search coverage
+    const movies = await getPopularMoviesList(5); // 5 pages = ~100 movies — limits crawler-driven function calls
     moviePages = movies.map((movie) => ({
       url: `${SITE_URL}/movie/${movie.slug}`,
       lastModified: new Date(),

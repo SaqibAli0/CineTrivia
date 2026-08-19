@@ -11,8 +11,8 @@ import { getMovieOfTheDay } from "@/lib/movie-of-the-day";
 import { toMovie, fallbackMovies } from "@/lib/movies";
 import { GENRES } from "@/lib/genres";
 
-// Revalidate every hour — keeps content fresh for SEO while allowing static generation
-export const revalidate = 3600;
+// Revalidate once per day — reduces serverless invocations while keeping content fresh
+export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: 'CineTrivia — Movie Recommendations, Fun Facts & Where to Watch',

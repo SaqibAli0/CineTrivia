@@ -21,8 +21,8 @@ import { AdSenseSlot } from '@/components/adsense-slot';
 export async function generateStaticParams() {
   try {
     const { getPopularMoviesList } = await import('@/lib/tmdb-details');
-    // Only pre-build 2 pages (~40 movies) to avoid TMDB rate limits during build
-    const movies = await getPopularMoviesList(2);
+    // Pre-build 5 pages (~100 movies) to reduce on-demand serverless invocations from crawlers
+    const movies = await getPopularMoviesList(5);
     return movies.map((movie) => ({ slug: movie.slug }));
   } catch {
     return [];

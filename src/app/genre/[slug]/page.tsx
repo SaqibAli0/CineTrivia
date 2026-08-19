@@ -8,6 +8,9 @@ import { Footer } from '@/components/footer';
 import { GenreIcon } from '@/components/genre-icon';
 import { GENRES, getGenreBySlug, getMoviesByGenre } from '@/lib/genres';
 
+// Revalidate once per day — keeps pages static for crawlers and users
+export const revalidate = 86400;
+
 interface PageProps {
   params: Promise<{ slug: string }>;
 }

@@ -14,13 +14,17 @@ interface MoviePool {
 export async function GET() {
   const pool = getDevCache<MoviePool>('movie_pool_v2');
 
+  const headers = {
+    'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
+  };
+
   if (!pool) {
     return NextResponse.json({
       status: 'empty',
       count: 0,
       isFull: false,
       message: 'Pool has not been created yet. Refresh the homepage to start filling it.',
-    });
+    }, { headers });
   }
 
   return NextResponse.json({
@@ -29,5 +33,5 @@ export async function GET() {
     target: 100,
     isFull: pool.isFull,
     sampleTitles: pool.movies.slice(0, 10).map((m: any) => m.title),
-  });
+  }, { headers });
 }

@@ -6,6 +6,9 @@ import { Footer } from '@/components/footer';
 import { GenreIcon } from '@/components/genre-icon';
 import { GENRES } from '@/lib/genres';
 
+// Static page — revalidate once per day
+export const revalidate = 86400;
+
 export const metadata: Metadata = {
   title: 'Browse Movies by Genre',
   description: 'Explore movies by genre — Action, Comedy, Drama, Horror, Sci-Fi, Thriller, and more. Find your next favorite film.',
