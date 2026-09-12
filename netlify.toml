@@ -1,0 +1,16 @@
+# Netlify configuration for the CineTrivia Next.js app.
+# Netlify auto-installs @netlify/plugin-nextjs for Next.js sites; this file
+# just makes the build deterministic and pins a supported Node version.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Next 16 + AbortSignal.timeout require Node 20+.
+  NODE_VERSION = "20"
+
+# Official Next.js runtime — handles SSR, dynamic routes, image optimization,
+# and on-demand rendering of /movie/[slug], /search, /genre/[slug], etc.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

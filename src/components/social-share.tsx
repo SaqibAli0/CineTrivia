@@ -1,8 +1,7 @@
 'use client';
 
 import { Share2, Twitter, Facebook, Link2, Check } from 'lucide-react';
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
 
 interface SocialShareProps {
   title: string;
@@ -16,6 +15,17 @@ interface SocialShareProps {
  */
 export function SocialShare({ title, url, description }: SocialShareProps) {
   const [copied, setCopied] = useState(false);
+  // Only show the native-share button AFTER mount. Rendering it based on
+  // `navigator.share` during SSR would make the server HTML (no button)
+  // differ from the client (button present) → hydration mismatch. Starting
+  // false and flipping in useEffect keeps the first client render identical
+  // to the server, then reveals the button on the next paint.
+  const [canNativeShare, setCanNativeShare] = useState(false);
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && 'share' in navigator) {
+      setCanNativeShare(true);
+    }
+  }, []);
 
   const shareText = description
     ? `${title} — ${description}`
@@ -84,7 +94,7 @@ export function SocialShare({ title, url, description }: SocialShareProps) {
         {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Link2 className="w-3.5 h-3.5" />}
       </button>
 
-      {typeof navigator !== 'undefined' && 'share' in navigator && (
+      {canNativeShare && (
         <button
           onClick={handleNativeShare}
           className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-card border border-border hover:border-primary/40 hover:text-primary transition-all"

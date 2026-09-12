@@ -1,6 +1,13 @@
 import type { NextConfig } from 'next';
+import path from 'node:path';
 
 const nextConfig: NextConfig = {
+  // Pin the workspace root to THIS project so Next doesn't pick the stray
+  // pnpm-lock.yaml in the home folder (silences the "inferred workspace root"
+  // multiple-lockfiles warning).
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
   images: {
     remotePatterns: [
       {
