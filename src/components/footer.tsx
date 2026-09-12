@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Film } from "lucide-react";
+import { KofiButton } from "./kofi-button";
 
 export function Footer() {
   return (
@@ -47,6 +48,11 @@ export function Footer() {
             <Link href="/privacy" className="block hover:text-foreground transition-colors">Privacy Policy</Link>
           </nav>
         </div>
+      </div>
+
+      {/* Support widget — renders only when NEXT_PUBLIC_KOFI_URL is set */}
+      <div className="mb-6">
+        <KofiButton variant="card" />
       </div>
 
       <div className="border-t border-border/40 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">

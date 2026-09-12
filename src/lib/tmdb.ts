@@ -6,7 +6,9 @@
  * randomized pagination for variety on each visit.
  */
 
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+import { isPornographic } from './content-filter';
+import { tmdbFetch } from './tmdb-client';
+
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
 
 // Poster sizes available from TMDB CDN
@@ -26,6 +28,8 @@ export interface TMDBMovie {
   release_date: string;
   vote_average: number;
   genre_ids: number[];
+  /** TMDB's own adult flag. True for titles flagged as pornographic. */
+  adult?: boolean;
 }
 
 interface TMDBResponse {
@@ -69,14 +73,6 @@ const GENRE_COMBOS = [
   [28, 12],        // Action + Adventure
 ];
 
-function getApiKey(): string {
-  const key = process.env.TMDB_API_KEY;
-  if (!key) {
-    throw new Error('TMDB_API_KEY is not configured');
-  }
-  return key;
-}
-
 /**
  * Build a full poster URL from TMDB's poster_path
  */
@@ -105,25 +101,16 @@ function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// Re-export so existing imports of TMDBUnreachableError keep working.
+export { TMDBUnreachableError } from './tmdb-client';
+
 /**
- * Fetch movies from a TMDB endpoint
+ * Fetch movies from a TMDB endpoint via the shared, key-safe client.
+ * Uses a short revalidate (not `no-store`) so the homepage can still render
+ * statically and its api_key never leaks into a dynamic-render error.
  */
 async function fetchFromTMDB(endpoint: string, params: Record<string, string> = {}): Promise<TMDBResponse> {
-  const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
-  url.searchParams.set('api_key', getApiKey());
-  url.searchParams.set('language', 'en-US');
-
-  for (const [key, value] of Object.entries(params)) {
-    url.searchParams.set(key, value);
-  }
-
-  const response = await fetch(url.toString(), { cache: 'no-store' });
-
-  if (!response.ok) {
-    throw new Error(`TMDB request failed: ${response.status} ${response.statusText}`);
-  }
-
-  return response.json();
+  return tmdbFetch<TMDBResponse>(endpoint, { params, revalidate: 3600 });
 }
 
 /**
@@ -180,6 +167,74 @@ export async function searchMovie(title: string, year?: number): Promise<TMDBMov
   return data.results[0];
 }
 
+export interface VerifiedMovie {
+  title: string;
+  year: number;
+  rating: number;
+  genre: string;
+  overview: string;
+  posterUrl: string;
+}
+
+/**
+ * Verify an AI-suggested movie against TMDB.
+ *
+ * Tries an exact title+year match first, then falls back to a title-only
+ * search (the AI often hallucinates the year). Returns the real TMDB record
+ * so callers can correct a hallucinated year/rating/poster, or null when no
+ * confident match exists.
+ */
+export async function verifyMovie(title: string, year?: number): Promise<VerifiedMovie | null> {
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+
+  const target = normalize(title);
+
+  try {
+    // 1) Title + year (most precise).
+    let candidates: TMDBMovie[] = [];
+    if (year) {
+      const withYear = await fetchFromTMDB('/search/movie', { query: title, year: String(year) });
+      candidates = withYear.results;
+    }
+
+    // 2) Title-only fallback (corrects a hallucinated year).
+    if (candidates.length === 0) {
+      const titleOnly = await fetchFromTMDB('/search/movie', { query: title });
+      candidates = titleOnly.results;
+    }
+
+    if (candidates.length === 0) return null;
+
+    // Prefer an exact normalized title match; otherwise take TMDB's top result
+    // (results are already relevance-ranked) as long as it has a poster.
+    const exact = candidates.find((m) => normalize(m.title) === target && m.poster_path);
+    const match = exact ?? candidates.find((m) => m.poster_path) ?? candidates[0];
+    if (!match) return null;
+
+    const matchYear = match.release_date
+      ? parseInt(match.release_date.split('-')[0], 10)
+      : year ?? 0;
+
+    return {
+      title: match.title,
+      year: matchYear,
+      rating: Math.round(match.vote_average * 10) / 10,
+      genre: getGenreLabel(match.genre_ids),
+      overview: match.overview,
+      posterUrl: getPosterUrl(match.poster_path, 'large'),
+    };
+  } catch (error) {
+    console.error('verifyMovie failed:', error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
 /**
  * Build a mixed collection of movies for the homepage.
  * Combines popular, top-rated, and genre-based discovery
@@ -204,7 +259,7 @@ export async function getMovieCollection(count: number = 20): Promise<TMDBMovie[
     const combined: TMDBMovie[] = [];
 
     for (const movie of [...popularSlice, ...topRatedSlice, ...discoveredSlice]) {
-      if (!seen.has(movie.id) && movie.poster_path) {
+      if (!seen.has(movie.id) && movie.poster_path && !isPornographic(movie)) {
         seen.add(movie.id);
         combined.push(movie);
       }
@@ -218,7 +273,7 @@ export async function getMovieCollection(count: number = 20): Promise<TMDBMovie[
 
     return combined.slice(0, count);
   } catch (error) {
-    console.error('Failed to fetch movie collection from TMDB:', error);
+    console.warn('[tmdb] movie collection unavailable:', error instanceof Error ? error.name : 'error');
     return [];
   }
 }

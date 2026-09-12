@@ -2,7 +2,8 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Calendar, User, Tag, Film } from 'lucide-react';
-import { getPostBySlug, getAllPosts } from '@/lib/blog';
+import { getPostBySlug, getAllPosts, getAuthorProfile } from '@/lib/blog';
+import { SITE_URL } from '@/lib/site';
 import { Footer } from '@/components/footer';
 import { Navbar } from '@/components/navbar';
 import { SocialShare } from '@/components/social-share';
@@ -47,7 +48,8 @@ export default async function BlogPostPage({ params }: PageProps) {
   const post = getPostBySlug(slug);
   if (!post) notFound();
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
+  const siteUrl = SITE_URL;
+  const author = getAuthorProfile(post.author);
 
   return (
     <div className="bg-background min-h-screen text-foreground pt-16">
@@ -79,7 +81,7 @@ export default async function BlogPostPage({ params }: PageProps) {
               </span>
               <span className="inline-flex items-center gap-1">
                 <User className="w-3 h-3" />
-                {post.author}
+                {author.name}
               </span>
             </div>
             <h1 className="font-headline text-2xl sm:text-3xl md:text-4xl text-foreground mb-4 leading-tight">
@@ -143,6 +145,23 @@ export default async function BlogPostPage({ params }: PageProps) {
             </section>
           )}
 
+          {/* Author credibility (E-E-A-T) */}
+          <section className="mt-10 pt-8 border-t border-border">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <User className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  Written by {author.name}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+                  {author.bio}
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* CTA */}
           <section className="mt-10 text-center py-10 rounded-2xl bg-card border border-border">
             <Film className="w-8 h-8 text-primary mx-auto mb-4" />
@@ -172,8 +191,12 @@ export default async function BlogPostPage({ params }: PageProps) {
             description: post.description,
             datePublished: post.publishedAt,
             dateModified: post.updatedAt || post.publishedAt,
-            author: { '@type': 'Organization', name: post.author },
-            publisher: { '@type': 'Organization', name: 'CineTrivia' },
+            author: { '@type': author.type, name: author.name, description: author.bio },
+            publisher: {
+              '@type': 'Organization',
+              name: 'CineTrivia',
+              logo: { '@type': 'ImageObject', url: `${siteUrl}/favicon.ico` },
+            },
             mainEntityOfPage: `${siteUrl}/blog/${post.slug}`,
           }),
         }}

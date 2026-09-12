@@ -6,8 +6,7 @@
  */
 
 import { getPosterUrl, getGenreLabel } from './tmdb';
-
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+import { tmdbFetch } from './tmdb-client';
 
 export interface DailyMovie {
   title: string;
@@ -58,15 +57,10 @@ export async function getMovieOfTheDay(): Promise<DailyMovie | null> {
     const page = (dayOfYear % 10) + 1; // Pages 1-10
     const indexInPage = (y * 100 + dayOfYear) % 20; // Index 0-19
 
-    const url = new URL(`${TMDB_BASE_URL}/movie/top_rated`);
-    url.searchParams.set('api_key', apiKey);
-    url.searchParams.set('language', 'en-US');
-    url.searchParams.set('page', String(page));
-
-    const response = await fetch(url.toString(), { next: { revalidate: 86400 } }); // Cache 24h
-    if (!response.ok) return null;
-
-    const data = await response.json();
+    const data = await tmdbFetch<{ results: any[] }>('/movie/top_rated', {
+      params: { page: String(page) },
+      revalidate: 86400, // Cache 24h
+    });
     const results = data.results || [];
     if (results.length === 0) return null;
 
@@ -83,7 +77,8 @@ export async function getMovieOfTheDay(): Promise<DailyMovie | null> {
       date: today,
     };
   } catch (error) {
-    console.error('Failed to get movie of the day:', error);
+    // Sanitized: never log the URL/key. tmdb-client already logs the endpoint.
+    console.warn('[movie-of-the-day] unavailable:', error instanceof Error ? error.name : 'error');
     return null;
   }
 }

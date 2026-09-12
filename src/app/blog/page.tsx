@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { Film, ArrowLeft, Calendar, Tag } from 'lucide-react';
 import { getAllPosts } from '@/lib/blog';
+import { SITE_URL } from '@/lib/site';
 import { Footer } from '@/components/footer';
 import { Navbar } from '@/components/navbar';
 
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 
 export default function BlogPage() {
   const posts = getAllPosts();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
+  const siteUrl = SITE_URL;
 
   const collectionSchema = {
     '@context': 'https://schema.org',

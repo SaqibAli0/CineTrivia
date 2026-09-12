@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import type { Movie } from "@/lib/movies";
 import { MovieCard } from "./movie-card";
 import { MovieCardSkeleton } from "./movie-card-skeleton";
-import { Search, Film } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { SearchBox } from "./search-box";
+import { Film } from "lucide-react";
 import { isPoolFull, getShuffledMovies, addToPool } from "@/lib/movie-pool-client";
 
 interface MovieGridProps {
@@ -14,7 +14,6 @@ interface MovieGridProps {
 
 export function MovieGrid({ movies: serverMovies }: MovieGridProps) {
   const [displayMovies, setDisplayMovies] = useState<Movie[]>(serverMovies);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -48,16 +47,6 @@ export function MovieGrid({ movies: serverMovies }: MovieGridProps) {
     loadMovies();
   }, [serverMovies]);
 
-  const filteredMovies = useMemo(() => {
-    if (!searchQuery) return displayMovies;
-    const q = searchQuery.toLowerCase();
-    return displayMovies.filter(
-      (movie) =>
-        movie.title.toLowerCase().includes(q) ||
-        movie.genre.toLowerCase().includes(q)
-    );
-  }, [displayMovies, searchQuery]);
-
   return (
     <div className="space-y-10">
       <div>
@@ -69,17 +58,10 @@ export function MovieGrid({ movies: serverMovies }: MovieGridProps) {
         </p>
       </div>
 
-      <div className="relative w-full sm:max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search by title or genre..."
-          className="pl-9 bg-card border-border/60 rounded-full text-sm"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          aria-label="Search movies"
-        />
-      </div>
+      <SearchBox
+        localMovies={displayMovies}
+        placeholder="Search any movie by title..."
+      />
 
       {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
@@ -87,22 +69,17 @@ export function MovieGrid({ movies: serverMovies }: MovieGridProps) {
             <MovieCardSkeleton key={i} />
           ))}
         </div>
-      ) : filteredMovies.length > 0 ? (
+      ) : displayMovies.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
-          {filteredMovies.map((movie) => (
+          {displayMovies.map((movie) => (
             <MovieCard key={movie.id} movie={movie} />
           ))}
         </div>
-      ) : displayMovies.length === 0 ? (
+      ) : (
         <div className="text-center py-16 space-y-3">
           <Film className="w-12 h-12 text-muted-foreground mx-auto opacity-50" />
           <p className="text-lg font-medium text-foreground">Collection loading...</p>
           <p className="text-muted-foreground text-sm">Movies will appear here shortly.</p>
-        </div>
-      ) : (
-        <div className="text-center py-16">
-          <p className="text-lg font-medium text-foreground">No movies found</p>
-          <p className="text-muted-foreground text-sm">Try a different search term.</p>
         </div>
       )}
     </div>

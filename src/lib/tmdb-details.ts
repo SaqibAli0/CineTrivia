@@ -6,8 +6,9 @@
  */
 
 import { TMDBMovie, getPosterUrl, getGenreLabel } from './tmdb';
-
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+import { toSlug } from './slug';
+import { isPornographic } from './content-filter';
+import { tmdbFetch } from './tmdb-client';
 
 interface TMDBMovieDetails {
   id: number;
@@ -81,60 +82,82 @@ export interface SimilarMovie {
   slug: string;
 }
 
-function getApiKey(): string {
-  const key = process.env.TMDB_API_KEY;
-  if (!key) throw new Error('TMDB_API_KEY is not configured');
-  return key;
+/** Thin wrapper over the shared, key-safe TMDB client. */
+async function fetchTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
+  return tmdbFetch<T>(endpoint, { params, revalidate: 3600 });
 }
 
-async function fetchTMDB<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
-  const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
-  url.searchParams.set('api_key', getApiKey());
-  url.searchParams.set('language', 'en-US');
+/**
+ * Pick the best match from TMDB results, preferring the one whose release year
+ * is closest to the target year (falling back to relevance order otherwise).
+ */
+function pickBestMatch(results: TMDBMovie[], year: number): TMDBMovie | null {
+  if (results.length === 0) return null;
 
-  for (const [key, value] of Object.entries(params)) {
-    url.searchParams.set(key, value);
-  }
+  const withYear = results
+    .map((m) => ({
+      movie: m,
+      y: m.release_date ? parseInt(m.release_date.split('-')[0], 10) : 0,
+    }))
+    .filter((r) => r.y > 0);
 
-  // Retry up to 3 times on rate limit (429)
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const response = await fetch(url.toString(), { next: { revalidate: 3600 } });
+  // Exact year match wins.
+  const exact = withYear.find((r) => r.y === year);
+  if (exact) return exact.movie;
 
-    if (response.status === 429) {
-      // Wait before retrying — exponential backoff
-      const waitMs = (attempt + 1) * 1500;
-      await new Promise((resolve) => setTimeout(resolve, waitMs));
-      continue;
-    }
+  // Otherwise the closest year within a small window (handles ±1 year drift).
+  const closest = withYear
+    .filter((r) => Math.abs(r.y - year) <= 1)
+    .sort((a, b) => Math.abs(a.y - year) - Math.abs(b.y - year))[0];
+  if (closest) return closest.movie;
 
-    if (!response.ok) {
-      throw new Error(`TMDB request failed: ${response.status}`);
-    }
-
-    return response.json();
-  }
-
-  throw new Error(`TMDB request failed: 429 (rate limited after retries)`);
+  // Fall back to TMDB's top (relevance-ranked) result.
+  return results[0];
 }
 
 /**
  * Search for a movie by title and year, return its TMDB ID.
+ *
+ * The slug strips accents and punctuation ("Léon: The Professional" becomes
+ * "leon-the-professional" → reconstructed as "Leon The Professional"), which
+ * TMDB's strict search can miss. So we broaden progressively:
+ *   1. full title + year
+ *   2. full title, no year (pick closest year)
+ *   3. first 1-2 significant words + year, then no year
+ * and pick the result whose year is closest to the target.
  */
 export async function findMovieId(title: string, year: number): Promise<number | null> {
-  const data = await fetchTMDB<{ results: TMDBMovie[] }>('/search/movie', {
-    query: title,
-    year: String(year),
-  });
-
-  if (data.results.length === 0) {
-    // Try without year as fallback
-    const fallback = await fetchTMDB<{ results: TMDBMovie[] }>('/search/movie', {
-      query: title,
+  const search = (query: string, useYear: boolean) =>
+    fetchTMDB<{ results: TMDBMovie[] }>('/search/movie', {
+      query,
+      ...(useYear ? { year: String(year) } : {}),
     });
-    return fallback.results[0]?.id ?? null;
+
+  // 1) Full title + year.
+  let best = pickBestMatch((await search(title, true)).results, year);
+  if (best) return best.id;
+
+  // 2) Full title, no year filter.
+  best = pickBestMatch((await search(title, false)).results, year);
+  if (best) return best.id;
+
+  // 3) Shorten the title progressively (drops a lost subtitle like
+  //    "The Professional"). Helps titles that only match on the main word(s).
+  //    e.g. "Leon The Professional" → "Leon The" → "Leon".
+  const words = title.split(/\s+/).filter(Boolean);
+  const shorterTitles = new Set<string>();
+  if (words.length > 2) shorterTitles.add(words.slice(0, 2).join(' '));
+  if (words.length > 1) shorterTitles.add(words[0]);
+
+  for (const shortTitle of shorterTitles) {
+    best = pickBestMatch((await search(shortTitle, true)).results, year);
+    if (best) return best.id;
+
+    best = pickBestMatch((await search(shortTitle, false)).results, year);
+    if (best) return best.id;
   }
 
-  return data.results[0].id;
+  return null;
 }
 
 /**
@@ -193,7 +216,7 @@ export async function getMovieDetails(movieId: number): Promise<MovieDetails | n
       contentRating,
     };
   } catch (error) {
-    console.error('Failed to fetch movie details:', error);
+    console.warn('[tmdb] movie details unavailable:', error instanceof Error ? error.name : 'error');
     return null;
   }
 }
@@ -227,7 +250,7 @@ export async function getMovieTrailer(movieId: number): Promise<MovieTrailer | n
       publishedAt: video.published_at ? video.published_at.split('T')[0] : '',
     };
   } catch (error) {
-    console.error('Failed to fetch movie trailer:', error);
+    console.warn('[tmdb] movie trailer unavailable:', error instanceof Error ? error.name : 'error');
     return null;
   }
 }
@@ -248,19 +271,11 @@ export async function getSimilarMovies(movieId: number, count: number = 8): Prom
 
     for (const movie of [...recommended.results, ...similar.results]) {
       if (seen.has(movie.id) || !movie.poster_path) continue;
+      if (isPornographic(movie)) continue;
       seen.add(movie.id);
 
       const year = movie.release_date ? parseInt(movie.release_date.split('-')[0], 10) : 0;
       if (!year) continue;
-
-      const titleSlug = movie.title
-        .toLowerCase()
-        .replace(/['']/g, '')
-        .replace(/&/g, 'and')
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
 
       movies.push({
         id: movie.id,
@@ -269,7 +284,7 @@ export async function getSimilarMovies(movieId: number, count: number = 8): Prom
         posterUrl: getPosterUrl(movie.poster_path, 'medium'),
         rating: Math.round(movie.vote_average * 10) / 10,
         genre: getGenreLabel(movie.genre_ids),
-        slug: `${titleSlug}-${year}`,
+        slug: toSlug(movie.title, year),
       });
 
       if (movies.length >= count) break;
@@ -277,7 +292,7 @@ export async function getSimilarMovies(movieId: number, count: number = 8): Prom
 
     return movies;
   } catch (error) {
-    console.error('Failed to fetch similar movies:', error);
+    console.warn('[tmdb] similar movies unavailable:', error instanceof Error ? error.name : 'error');
     return [];
   }
 }
@@ -300,24 +315,16 @@ export async function getPopularMoviesList(pages: number = 5): Promise<{ title: 
         const year = movie.release_date ? parseInt(movie.release_date.split('-')[0], 10) : 0;
         if (!year || !movie.poster_path) continue;
 
-        const titleSlug = movie.title
-          .toLowerCase()
-          .replace(/['']/g, '')
-          .replace(/&/g, 'and')
-          .replace(/[^a-z0-9\s-]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-')
-          .replace(/^-|-$/g, '');
-
         movies.push({
           title: movie.title,
           year,
-          slug: `${titleSlug}-${year}`,
+          slug: toSlug(movie.title, year),
         });
       }
     }
   } catch (error) {
-    console.error('Failed to fetch popular movies for sitemap:', error);
+    // Sanitized: never log the full error (its cause/URL can carry the key).
+    console.warn('[sitemap] popular movies unavailable:', error instanceof Error ? error.name : 'error');
   }
 
   return movies;
@@ -372,7 +379,7 @@ export async function getWatchProviders(movieId: number, region: string = 'US'):
 
     return providers.slice(0, 8); // Max 8 providers
   } catch (error) {
-    console.error('Failed to fetch watch providers:', error);
+    console.warn('[tmdb] watch providers unavailable:', error instanceof Error ? error.name : 'error');
     return [];
   }
 }

@@ -1,31 +1,56 @@
 /**
  * Affiliate link mapping for streaming providers.
  *
- * Each provider gets matched by name and routed to the right
- * search/browse URL with affiliate tracking params attached.
+ * Each provider is matched by name and routed to the right search/browse URL,
+ * with affiliate tracking params attached when the matching env var is set.
+ * Unconfigured providers still return a working (untracked) search link, so
+ * the "Watch" buttons never break.
  *
- * To activate: add your affiliate IDs to .env
- * - NEXT_PUBLIC_AMAZON_AFFILIATE_ID (from affiliate-program.amazon.com)
- * - NEXT_PUBLIC_APPLE_AFFILIATE_TOKEN (from performance-partners.apple.com)
+ * ─────────────────────────────────────────────────────────────────────────
+ * Affiliate env keys (all optional — add the ones whose programs you join):
+ *
+ *   NEXT_PUBLIC_AMAZON_AFFILIATE_ID     Amazon Associates tag  (…?tag=yourtag-20)
+ *                                       → affiliate-program.amazon.com
+ *   NEXT_PUBLIC_APPLE_AFFILIATE_TOKEN   Apple Services token   (…&at=token)
+ *                                       → performance-partners.apple.com
+ *   NEXT_PUBLIC_IMPACT_SUBID            Impact/partner sub-id appended as
+ *                                       ?subId1=… on supported partner links
+ *                                       (Paramount+, Peacock, Max, etc. run
+ *                                       their programs through Impact/CJ)
+ *   NEXT_PUBLIC_FANDANGO_AFFILIATE_ID   Fandango/Vudu (Fandango at Home) partner
+ *                                       id → used as the generic rent/buy option
+ *
+ * Providers without a public affiliate program (Netflix, Disney+, Hulu,
+ * Shudder) fall back to a plain search link. Update the configs below as you
+ * join more programs.
+ * ─────────────────────────────────────────────────────────────────────────
  */
-
-// Affiliate IDs from .env (empty = no tracking, links still work)
-// NEXT_PUBLIC_AMAZON_AFFILIATE_ID=your-tag-20
-// NEXT_PUBLIC_APPLE_AFFILIATE_TOKEN=your-token
 
 interface AffiliateConfig {
   /** Pattern to match provider name (case-insensitive) */
   pattern: RegExp;
-  /** Generate the affiliate URL for this provider */
+  /** Whether this provider has affiliate tracking configured. */
+  hasTracking: () => boolean;
+  /** Generate the URL for this provider (tracked when configured). */
   getUrl: (movieTitle: string, year: number) => string;
 }
 
 const AMAZON_TAG = process.env.NEXT_PUBLIC_AMAZON_AFFILIATE_ID || '';
 const APPLE_TOKEN = process.env.NEXT_PUBLIC_APPLE_AFFILIATE_TOKEN || '';
+const IMPACT_SUBID = process.env.NEXT_PUBLIC_IMPACT_SUBID || '';
+const FANDANGO_ID = process.env.NEXT_PUBLIC_FANDANGO_AFFILIATE_ID || '';
+
+/** Append an Impact/partner sub-id to a URL when configured. */
+function withImpact(url: string): string {
+  if (!IMPACT_SUBID) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}subId1=${encodeURIComponent(IMPACT_SUBID)}`;
+}
 
 const AFFILIATE_CONFIGS: AffiliateConfig[] = [
   {
     pattern: /amazon|prime video/i,
+    hasTracking: () => Boolean(AMAZON_TAG),
     getUrl: (title, year) => {
       const q = encodeURIComponent(`${title} ${year}`);
       const tag = AMAZON_TAG ? `&tag=${AMAZON_TAG}` : '';
@@ -34,65 +59,65 @@ const AFFILIATE_CONFIGS: AffiliateConfig[] = [
   },
   {
     pattern: /apple tv/i,
-    getUrl: (title, year) => {
-      const q = encodeURIComponent(`${title}`);
+    hasTracking: () => Boolean(APPLE_TOKEN),
+    getUrl: (title) => {
+      const q = encodeURIComponent(title);
       const token = APPLE_TOKEN ? `&at=${APPLE_TOKEN}` : '';
       return `https://tv.apple.com/search?term=${q}${token}`;
     },
   },
   {
+    // Fandango at Home (formerly Vudu) — common rent/buy affiliate option.
+    pattern: /vudu|fandango/i,
+    hasTracking: () => Boolean(FANDANGO_ID || IMPACT_SUBID),
+    getUrl: (title) => {
+      const q = encodeURIComponent(title);
+      const base = `https://www.fandangoathome.com/search?q=${q}`;
+      const withId = FANDANGO_ID ? `${base}&cmp=${encodeURIComponent(FANDANGO_ID)}` : base;
+      return withImpact(withId);
+    },
+  },
+  {
     pattern: /paramount/i,
-    getUrl: (title, year) => {
-      const q = encodeURIComponent(`${title}`);
-      return `https://www.paramountplus.com/search/?q=${q}`;
-    },
-  },
-  {
-    pattern: /netflix/i,
-    getUrl: (title, year) => {
-      const q = encodeURIComponent(`${title}`);
-      return `https://www.netflix.com/search?q=${q}`;
-    },
-  },
-  {
-    pattern: /disney/i,
-    getUrl: (title, year) => {
-      const q = encodeURIComponent(`${title}`);
-      return `https://www.disneyplus.com/search?q=${q}`;
-    },
-  },
-  {
-    pattern: /hulu/i,
-    getUrl: (title, year) => {
-      const q = encodeURIComponent(`${title}`);
-      return `https://www.hulu.com/search?q=${q}`;
-    },
-  },
-  {
-    pattern: /hbo|max/i,
-    getUrl: (title, year) => {
-      const q = encodeURIComponent(`${title}`);
-      return `https://www.max.com/search?q=${q}`;
-    },
-  },
-  {
-    pattern: /shudder/i,
-    getUrl: (title, year) => {
-      const q = encodeURIComponent(`${title}`);
-      return `https://www.shudder.com/search?q=${q}`;
-    },
+    hasTracking: () => Boolean(IMPACT_SUBID),
+    getUrl: (title) => withImpact(`https://www.paramountplus.com/search/?q=${encodeURIComponent(title)}`),
   },
   {
     pattern: /peacock/i,
-    getUrl: (title, year) => {
-      const q = encodeURIComponent(`${title}`);
-      return `https://www.peacocktv.com/search?q=${q}`;
-    },
+    hasTracking: () => Boolean(IMPACT_SUBID),
+    getUrl: (title) => withImpact(`https://www.peacocktv.com/search?q=${encodeURIComponent(title)}`),
+  },
+  {
+    pattern: /hbo|max/i,
+    hasTracking: () => Boolean(IMPACT_SUBID),
+    getUrl: (title) => withImpact(`https://www.max.com/search?q=${encodeURIComponent(title)}`),
+  },
+  // ── Providers without a public affiliate program: plain search links ──
+  {
+    pattern: /netflix/i,
+    hasTracking: () => false,
+    getUrl: (title) => `https://www.netflix.com/search?q=${encodeURIComponent(title)}`,
+  },
+  {
+    pattern: /disney/i,
+    hasTracking: () => false,
+    getUrl: (title) => `https://www.disneyplus.com/search?q=${encodeURIComponent(title)}`,
+  },
+  {
+    pattern: /hulu/i,
+    hasTracking: () => false,
+    getUrl: (title) => `https://www.hulu.com/search?q=${encodeURIComponent(title)}`,
+  },
+  {
+    pattern: /shudder/i,
+    hasTracking: () => false,
+    getUrl: (title) => `https://www.shudder.com/search?q=${encodeURIComponent(title)}`,
   },
 ];
 
 /**
- * Get the affiliate URL for a provider, or fall back to Google search.
+ * Get the affiliate (or plain search) URL for a provider.
+ * Falls back to a Google search when the provider isn't recognized.
  */
 export function getAffiliateUrl(
   providerName: string,
@@ -108,6 +133,15 @@ export function getAffiliateUrl(
   // Fallback: Google search
   const q = encodeURIComponent(`watch ${movieTitle} ${year} on ${providerName}`);
   return `https://www.google.com/search?q=${q}`;
+}
+
+/**
+ * Whether a given provider currently returns a tracked (affiliate) link.
+ * Useful for tests and for conditionally surfacing "supported" badges.
+ */
+export function hasAffiliateTracking(providerName: string): boolean {
+  const config = AFFILIATE_CONFIGS.find((c) => c.pattern.test(providerName));
+  return config ? config.hasTracking() : false;
 }
 
 /**

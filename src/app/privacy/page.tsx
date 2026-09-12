@@ -5,6 +5,14 @@ import { Film, ArrowLeft } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'Privacy Policy | CineTrivia',
   description: 'CineTrivia privacy policy — how we handle your data and protect your privacy.',
+  alternates: { canonical: '/privacy' },
+  openGraph: {
+    title: 'Privacy Policy | CineTrivia',
+    description: 'CineTrivia privacy policy — how we handle your data and protect your privacy.',
+    type: 'website',
+    siteName: 'CineTrivia',
+    url: '/privacy',
+  },
 };
 
 export default function PrivacyPage() {

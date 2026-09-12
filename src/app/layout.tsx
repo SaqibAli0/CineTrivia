@@ -5,6 +5,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 import { WebVitals } from "@/components/web-vitals";
+import { SITE_URL, SOCIAL_PROFILES } from "@/lib/site";
 
 const inter = Inter({
   subsets: ['latin'],
@@ -17,8 +18,6 @@ const playfair = Playfair_Display({
   variable: '--font-playfair',
   display: 'swap',
 });
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
 
 export const metadata: Metadata = {
   title: {
@@ -74,7 +73,9 @@ export default function RootLayout({
     name: 'CineTrivia',
     url: SITE_URL,
     logo: `${SITE_URL}/favicon.ico`,
-    sameAs: [],
+    // Populated from env-driven social profiles; omitted entirely when none set
+    // so we never emit an empty sameAs array.
+    ...(SOCIAL_PROFILES.length > 0 ? { sameAs: SOCIAL_PROFILES } : {}),
     description: 'Discover movies with personalized recommendations, fun facts, and trivia.',
   };
 
@@ -88,7 +89,7 @@ export default function RootLayout({
       '@type': 'SearchAction',
       target: {
         '@type': 'EntryPoint',
-        urlTemplate: `${SITE_URL}/?q={search_term_string}`,
+        urlTemplate: `${SITE_URL}/search?q={search_term_string}`,
       },
       'query-input': 'required name=search_term_string',
     },
@@ -96,17 +97,21 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${playfair.variable}`}>
-      <head>
-        <script
+      <body className="font-body antialiased">
+        {/* Structured data via next/script so third-party head injections
+            (AdSense, extensions) can't cause a hydration mismatch. */}
+        <Script
+          id="ld-organization"
           type="application/ld+json"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
-        <script
+        <Script
+          id="ld-website"
           type="application/ld+json"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
         />
-      </head>
-      <body className="font-body antialiased">
         <ThemeProvider>
           {children}
           <Toaster />
@@ -114,10 +119,12 @@ export default function RootLayout({
         <WebVitals />
         {/* Google AdSense — only loads when configured */}
         {adsenseClientId && (
-          <script
+          <Script
+            id="adsense-js"
             async
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
             crossOrigin="anonymous"
+            strategy="afterInteractive"
           />
         )}
         {/* Google Analytics 4 — only loads when configured */}

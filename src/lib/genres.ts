@@ -5,6 +5,8 @@
 
 import { getPosterUrl, getGenreLabel } from './tmdb';
 import { toSlug } from './slug';
+import { isPornographic } from './content-filter';
+import { tmdbFetch } from './tmdb-client';
 
 export interface GenreInfo {
   id: number;
@@ -55,27 +57,23 @@ export function getGenreBySlug(slug: string): GenreInfo | null {
  * Fetch movies for a specific genre from TMDB.
  */
 export async function getMoviesByGenre(genreId: number, count: number = 20): Promise<GenreMovie[]> {
-  const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-  const apiKey = process.env.TMDB_API_KEY;
-  if (!apiKey) return [];
+  if (!process.env.TMDB_API_KEY) return [];
 
   try {
-    const url = new URL(`${TMDB_BASE_URL}/discover/movie`);
-    url.searchParams.set('api_key', apiKey);
-    url.searchParams.set('language', 'en-US');
-    url.searchParams.set('sort_by', 'vote_average.desc');
-    url.searchParams.set('vote_count.gte', '500');
-    url.searchParams.set('with_genres', String(genreId));
-    url.searchParams.set('page', '1');
-
-    const response = await fetch(url.toString(), { next: { revalidate: 86400 } }); // Cache 24h
-    if (!response.ok) return [];
-
-    const data = await response.json();
+    const data = await tmdbFetch<{ results: any[] }>('/discover/movie', {
+      params: {
+        sort_by: 'vote_average.desc',
+        'vote_count.gte': '500',
+        with_genres: String(genreId),
+        page: '1',
+      },
+      revalidate: 86400, // Cache 24h
+    });
     const movies: GenreMovie[] = [];
 
     for (const movie of data.results) {
       if (!movie.poster_path || !movie.release_date) continue;
+      if (isPornographic(movie)) continue;
       const year = parseInt(movie.release_date.split('-')[0], 10);
       if (!year) continue;
 
@@ -93,7 +91,8 @@ export async function getMoviesByGenre(genreId: number, count: number = 20): Pro
 
     return movies;
   } catch (error) {
-    console.error('Failed to fetch genre movies:', error);
+    // Sanitized: tmdb-client logs the endpoint; never log the URL/key here.
+    console.warn('[genres] unavailable:', error instanceof Error ? error.name : 'error');
     return [];
   }
 }

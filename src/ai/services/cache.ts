@@ -16,7 +16,7 @@ interface CacheEntry<T> {
   expiresAt: number | null; // null = never expires
 }
 
-class ServerCache<T> {
+export class ServerCache<T> {
   private store = new Map<string, CacheEntry<T>>();
   private maxSize: number;
 

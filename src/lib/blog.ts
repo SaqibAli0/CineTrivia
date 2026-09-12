@@ -24,6 +24,33 @@ export interface BlogSection {
   body: string;
 }
 
+/**
+ * Author profiles for E-E-A-T. Posts reference an author by name; unknown
+ * authors fall back to the editorial team profile. Bios add the credibility
+ * signals search engines look for (who wrote this and why they're qualified).
+ */
+export interface AuthorProfile {
+  name: string;
+  bio: string;
+  /** schema.org author type — Person for named writers, Organization for the team. */
+  type: 'Person' | 'Organization';
+}
+
+const AUTHOR_PROFILES: Record<string, AuthorProfile> = {
+  'CineTrivia Team': {
+    name: 'CineTrivia Editorial Team',
+    type: 'Organization',
+    bio: 'The CineTrivia editorial team is a group of lifelong film enthusiasts who watch, rank, and write about movies across every genre. Recommendations are cross-checked against TMDB data for accurate titles, years, and ratings.',
+  },
+};
+
+const DEFAULT_AUTHOR: AuthorProfile = AUTHOR_PROFILES['CineTrivia Team'];
+
+/** Resolve an author string to a full profile (with a sensible fallback). */
+export function getAuthorProfile(author: string): AuthorProfile {
+  return AUTHOR_PROFILES[author] ?? { name: author, type: 'Person', bio: DEFAULT_AUTHOR.bio };
+}
+
 export const blogPosts: BlogPost[] = [
   {
     slug: 'best-movie-recommendations-2025',

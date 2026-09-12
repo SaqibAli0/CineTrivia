@@ -1,4 +1,5 @@
 import type { MovieDetails, MovieTrailer } from '@/lib/tmdb-details';
+import { SITE_URL } from '@/lib/site';
 
 interface MovieJsonLdProps {
   movie: MovieDetails;
@@ -12,7 +13,7 @@ interface MovieJsonLdProps {
  * FAQ schema removed — Google deprecated FAQ rich results on May 7, 2026.
  */
 export function MovieJsonLd({ movie, slug, trailer }: MovieJsonLdProps) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
+  const siteUrl = SITE_URL;
 
   const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',

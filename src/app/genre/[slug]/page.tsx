@@ -7,6 +7,7 @@ import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import { GenreIcon } from '@/components/genre-icon';
 import { GENRES, getGenreBySlug, getMoviesByGenre } from '@/lib/genres';
+import { SITE_URL } from '@/lib/site';
 
 // Revalidate once per day — keeps pages static for crawlers and users
 export const revalidate = 86400;
@@ -41,9 +42,13 @@ export default async function GenrePage({ params }: PageProps) {
   const genre = getGenreBySlug(slug);
   if (!genre) notFound();
 
-  const movies = await getMoviesByGenre(genre.id);
+  // Skip the TMDB fetch when pre-rendering is disabled (e.g. TMDB blocked on
+  // this network at build time). The page still renders its static shell +
+  // helpful empty-state, and real movies load on-demand once TMDB is reachable.
+  const { shouldPrerenderTmdbPages } = await import('@/lib/tmdb-client');
+  const movies = (await shouldPrerenderTmdbPages()) ? await getMoviesByGenre(genre.id) : [];
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
+  const siteUrl = SITE_URL;
 
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
@@ -138,10 +143,36 @@ export default async function GenrePage({ params }: PageProps) {
               ))}
             </div>
           ) : (
-            <div className="text-center py-16">
-              <Film className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium text-foreground">Loading movies...</p>
-              <p className="text-muted-foreground text-sm">Check back shortly.</p>
+            <div className="text-center py-16 space-y-5">
+              <Film className="w-12 h-12 text-muted-foreground mx-auto opacity-50" />
+              <div>
+                <p className="text-lg font-medium text-foreground">
+                  No {genre.name.toLowerCase()} movies to show right now
+                </p>
+                <p className="text-muted-foreground text-sm">
+                  Our movie database is briefly unavailable. Try another genre or get a
+                  personalized recommendation instead.
+                </p>
+              </div>
+              <div className="flex flex-wrap justify-center gap-2">
+                {GENRES.filter((g) => g.slug !== genre.slug)
+                  .slice(0, 6)
+                  .map((g) => (
+                    <Link
+                      key={g.slug}
+                      href={`/genre/${g.slug}`}
+                      className="text-sm px-3 py-1.5 rounded-full bg-card border border-border hover:border-primary/40 hover:text-primary transition-all"
+                    >
+                      {g.name}
+                    </Link>
+                  ))}
+              </div>
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
+              >
+                Get a Recommendation
+              </Link>
             </div>
           )}
         </main>

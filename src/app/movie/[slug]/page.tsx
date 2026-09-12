@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Clock, Star, Film, Globe, Sparkles, Calendar, DollarSign, TrendingUp, ArrowRight, Clapperboard } from 'lucide-react';
 import { fromSlug } from '@/lib/slug';
+import { SITE_URL } from '@/lib/site';
 import { findMovieId, getMovieDetails, getSimilarMovies, getWatchProviders, getMovieTrailer } from '@/lib/tmdb-details';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/navbar';
@@ -20,6 +21,13 @@ import { AdSenseSlot } from '@/components/adsense-slot';
 // The rest will be generated on-demand when first visited and cached.
 export async function generateStaticParams() {
   try {
+    // If TMDB is unreachable (e.g. blocked on this network), skip pre-building
+    // entirely — otherwise we'd fire hundreds of doomed requests and each page
+    // would render its ~6 failing fetches. Pages still generate on-demand later
+    // (dynamicParams=true), where TMDB is reachable.
+    const { shouldPrerenderTmdbPages } = await import('@/lib/tmdb-client');
+    if (!(await shouldPrerenderTmdbPages())) return [];
+
     const { getPopularMoviesList } = await import('@/lib/tmdb-details');
     // Pre-build 5 pages (~100 movies) to reduce on-demand serverless invocations from crawlers
     const movies = await getPopularMoviesList(5);
@@ -43,9 +51,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const parsed = fromSlug(slug);
   if (!parsed) return { title: 'Movie Not Found' };
-  const movieId = await findMovieId(parsed.title, parsed.year);
-  if (!movieId) return { title: 'Movie Not Found' };
-  const movie = await getMovieDetails(movieId);
+
+  let movie: Awaited<ReturnType<typeof getMovieDetails>> = null;
+  try {
+    const movieId = await findMovieId(parsed.title, parsed.year);
+    if (!movieId) return { title: 'Movie Not Found' };
+    movie = await getMovieDetails(movieId);
+  } catch (error) {
+    // TMDB unreachable during metadata generation — don't crash the build.
+    console.error(`[generateMetadata] TMDB unavailable for "${slug}":`, error instanceof Error ? error.message : error);
+    return { title: 'Movie' };
+  }
   if (!movie) return { title: 'Movie Not Found' };
   const title = `${movie.title} (${movie.year}) — Movie Facts & Where to Watch`;
   const description = `Discover fun facts about ${movie.title} (${movie.year}). ${movie.overview.slice(0, 120)}... Find where to watch, cast info, and similar movies.`;
@@ -69,17 +85,36 @@ export default async function MoviePage({ params }: PageProps) {
   const { slug } = await params;
   const parsed = fromSlug(slug);
   if (!parsed) notFound();
-  const movieId = await findMovieId(parsed.title, parsed.year);
-  if (!movieId) notFound();
-  const [movie, similarMovies, watchProviders, trailer] = await Promise.all([
-    getMovieDetails(movieId),
-    getSimilarMovies(movieId, 8),
-    getWatchProviders(movieId),
-    getMovieTrailer(movieId),
-  ]);
+
+  // Any TMDB call here can throw a raw network error (e.g. ECONNRESET when the
+  // API is unreachable). Catch it so a transient outage renders a 404 instead
+  // of crashing the whole prerender/build. The page will be generated on-demand
+  // and cached once TMDB is reachable again (dynamicParams + revalidate).
+  let movie: Awaited<ReturnType<typeof getMovieDetails>> = null;
+  let similarMovies: Awaited<ReturnType<typeof getSimilarMovies>> = [];
+  let watchProviders: Awaited<ReturnType<typeof getWatchProviders>> = [];
+  let trailer: Awaited<ReturnType<typeof getMovieTrailer>> = null;
+
+  try {
+    const movieId = await findMovieId(parsed.title, parsed.year);
+    if (!movieId) notFound();
+
+    [movie, similarMovies, watchProviders, trailer] = await Promise.all([
+      getMovieDetails(movieId),
+      getSimilarMovies(movieId, 8),
+      getWatchProviders(movieId),
+      getMovieTrailer(movieId),
+    ]);
+  } catch (error) {
+    // notFound() throws internally — let it propagate; swallow only real errors.
+    if (error && typeof error === 'object' && 'digest' in error) throw error;
+    console.error(`[MoviePage] TMDB unavailable for "${slug}":`, error instanceof Error ? error.message : error);
+    notFound();
+  }
+
   if (!movie) notFound();
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app';
+  const siteUrl = SITE_URL;
 
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
@@ -163,7 +198,7 @@ export default async function MoviePage({ params }: PageProps) {
                     <FunFactButton movieTitle={movie.title} />
                     <SocialShare
                       title={`${movie.title} (${movie.year})`}
-                      url={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://classy-bublanina-aba3cc.netlify.app'}/movie/${slug}`}
+                      url={`${siteUrl}/movie/${slug}`}
                       description={movie.tagline || `Discover fun facts about ${movie.title}`}
                     />
                   </div>

@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FunFactButton } from "./fun-fact-button";
 import { getHistory, addToHistory, type HistoryEntry } from "@/lib/history";
 import { toSlug } from "@/lib/slug";
+import { KofiButton } from "./kofi-button";
 import Link from "next/link";
 
 const formSchema = z.object({
@@ -30,9 +31,17 @@ const genres = [
   "Fantasy", "Horror", "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western",
 ];
 
+// Advanced aesthetic mood filters ship free for everyone (localStorage only,
+// no gate). Each value is lower-cased into the recommendation prompt, so adding
+// a chip here is all that's needed to expand the moods a user can pick from.
 const moods = [
+  // Core moods
   "Heartwarming", "Exciting", "Funny", "Intense", "Sad",
   "Thought-provoking", "Suspenseful", "Relaxing",
+  // Advanced aesthetic moods
+  "Nostalgic", "Dreamlike", "Gritty", "Whimsical", "Melancholic",
+  "Cozy", "Mind-bending", "Atmospheric", "Feel-good", "Dark & moody",
+  "Epic", "Quirky",
 ];
 
 export function MovieRecommendation() {
@@ -367,6 +376,14 @@ export function MovieRecommendation() {
                   </span>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Support widget — shows after a recommendation. Renders nothing
+              unless NEXT_PUBLIC_KOFI_URL is configured. */}
+          {recommendation && (
+            <div className="mt-6">
+              <KofiButton variant="card" />
             </div>
           )}
         </div>

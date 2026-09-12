@@ -17,6 +17,7 @@ import { searchMoviesByGenre } from '@/ai/services/tavily';
 import { recommendationCache } from '@/ai/services/recommendation-cache';
 import { recommendationResponseCache, ONE_HOUR } from '@/ai/services/cache';
 import { buildRecommendationPrompt } from '@/ai/utils/prompt-builder';
+import { verifyMovie } from '@/lib/tmdb';
 
 export type { RecommendMovieInput, RecommendMovieOutput };
 
@@ -42,19 +43,45 @@ const recommendMovieFlow = ai.defineFlow(
     // Fetch context from Tavily (reduced to 5 results)
     const tavilyResults = await fetchMovieData(input.moodOrGenre);
 
-    // Build prompt
-    const prompt = buildRecommendationPrompt({
-      tavilyResults,
-      excludeList: recommendationCache.getRecentMovies(),
-    });
+    // Generate, then validate against TMDB. Retry once if the first pick can't
+    // be verified (likely a hallucinated title), excluding it the second time.
+    let output: RecommendMovieOutput | null = null;
 
-    // Generate with fallback
-    const output = await generateWithFallback(prompt, input);
+    for (let attempt = 0; attempt < 2 && !output; attempt++) {
+      const prompt = buildRecommendationPrompt({
+        tavilyResults,
+        excludeList: recommendationCache.getRecentMovies(),
+      });
 
-    // Track in dedup cache
+      const candidate = await generateWithFallback(prompt, input);
+      const verified = await verifyMovie(candidate.title, candidate.year);
+
+      if (verified) {
+        // Correct any hallucinated year/rating and enrich with real TMDB data.
+        output = {
+          ...candidate,
+          title: verified.title,
+          year: verified.year,
+          rating: verified.rating > 0 ? verified.rating : candidate.rating,
+          genre: candidate.genre || verified.genre,
+          description: candidate.description || verified.overview,
+        };
+      } else {
+        // Unverified — remember it so the retry avoids the same hallucination.
+        recommendationCache.add(candidate.title, candidate.year);
+        // On the final attempt, fall back to the AI's raw output rather than failing.
+        if (attempt === 1) output = candidate;
+      }
+    }
+
+    if (!output) {
+      throw new Error('Failed to generate a verifiable movie recommendation');
+    }
+
+    // Track in dedup cache so subsequent requests rotate to a different film.
     recommendationCache.add(output.title, output.year);
 
-    // Cache the full response for 1 hour
+    // Cache the full response for 1 hour to stay zero-cost.
     recommendationResponseCache.set(cacheKey, output, ONE_HOUR);
 
     return output;
