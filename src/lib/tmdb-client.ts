@@ -14,10 +14,15 @@
 
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
-/** Per-attempt network timeout (ms). Short so a blocked network fails fast. */
-const DEFAULT_TIMEOUT_MS = 6000;
+/**
+ * Per-attempt network timeout (ms). Generous enough that a COLD connection
+ * (fresh DNS + TLS handshake on the first request) can complete — an overly
+ * short timeout aborts the first hit and only the warmed-up retry succeeds,
+ * which shows up as "fails first, works on refresh".
+ */
+const DEFAULT_TIMEOUT_MS = 15000;
 /** Attempts before giving up on a transient network failure. */
-const DEFAULT_MAX_ATTEMPTS = 2;
+const DEFAULT_MAX_ATTEMPTS = 3;
 
 /**
  * Thrown when TMDB's host can't be reached (reset / DNS block / timeout).
@@ -71,10 +76,14 @@ export async function tmdbFetch<T>(endpoint: string, options: TmdbFetchOptions =
 
   let lastError: unknown;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Escalating per-attempt timeout. The first attempt is shorter (so a truly
+    // dead network fails reasonably fast); later attempts get more time so a
+    // slow COLD connection can still complete rather than being aborted.
+    const attemptTimeout = Math.round(timeoutMs * (0.6 + attempt * 0.4));
     try {
       const response = await fetch(url.toString(), {
         next: { revalidate },
-        signal: AbortSignal.timeout(timeoutMs),
+        signal: AbortSignal.timeout(attemptTimeout),
       });
 
       if (response.status === 429) {

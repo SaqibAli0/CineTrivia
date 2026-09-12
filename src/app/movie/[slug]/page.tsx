@@ -135,12 +135,20 @@ export default async function MoviePage({ params }: PageProps) {
     // No match returned (and TMDB WAS reachable) → the movie doesn't exist.
     if (!movieId) notFound();
 
-    [movie, similarMovies, watchProviders, trailer] = await Promise.all([
-      getMovieDetails(movieId),
+    // CRITICAL path: the movie's own details. If this fails, we can't render.
+    movie = await getMovieDetails(movieId);
+
+    // SECONDARY data (similar films, providers, trailer) only ENRICHES the
+    // page. Fetch them with allSettled so a slow/failed secondary call can
+    // never blank out the whole page — we just render without that section.
+    const [similarR, providersR, trailerR] = await Promise.allSettled([
       getSimilarMovies(movieId, 8),
       getWatchProviders(movieId),
       getMovieTrailer(movieId),
     ]);
+    similarMovies = similarR.status === 'fulfilled' ? similarR.value : [];
+    watchProviders = providersR.status === 'fulfilled' ? providersR.value : [];
+    trailer = trailerR.status === 'fulfilled' ? trailerR.value : null;
   } catch (error) {
     // notFound() throws internally — let it propagate as a real 404.
     if (error && typeof error === 'object' && 'digest' in error) throw error;

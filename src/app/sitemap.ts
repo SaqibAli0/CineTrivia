@@ -69,7 +69,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }));
   } catch (error) {
-    console.error('Sitemap: Failed to fetch movies:', error);
+    console.warn('[sitemap] movies unavailable:', error instanceof Error ? error.name : 'error');
   }
 
   return [...staticPages, ...blogPages, ...genrePages, ...moviePages];

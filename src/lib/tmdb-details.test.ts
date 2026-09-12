@@ -46,13 +46,15 @@ describe('findMovieId — the "Léon" resolution bug', () => {
     vi.spyOn(global, 'fetch').mockResolvedValue(
       json({
         results: [
-          tmdbMovie(1, 'Leon', 2021), // remake / unrelated, wrong year
-          tmdbMovie(2, 'Léon: The Professional', 1994), // the one we want
+          tmdbMovie(1, 'Yeardrift', 2021), // wrong year
+          tmdbMovie(2, 'Yeardrift', 1994), // the one we want (matches target year)
         ],
       })
     );
 
-    const id = await findMovieId('Leon The Professional', 1994);
+    // Distinct title so the in-process findMovieId cache doesn't collide with
+    // the previous test's cached result.
+    const id = await findMovieId('Yeardrift', 1994);
     expect(id).toBe(2);
   });
 

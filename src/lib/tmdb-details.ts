@@ -9,6 +9,16 @@ import { TMDBMovie, getPosterUrl, getGenreLabel } from './tmdb';
 import { toSlug } from './slug';
 import { isPornographic } from './content-filter';
 import { tmdbFetch } from './tmdb-client';
+import { ServerCache, ONE_HOUR } from '@/ai/services/cache';
+
+/**
+ * In-process caches so each movie's slow network fetch happens at most once,
+ * then subsequent visits are instant. Critical for slow/flaky upstreams: a
+ * movie that took 30s to load the first time is served immediately after.
+ * `findMovieId` results never change, so they never expire.
+ */
+const movieIdCache = new ServerCache<number>(500);
+const movieDetailsCache = new ServerCache<MovieDetails>(300);
 
 interface TMDBMovieDetails {
   id: number;
@@ -127,19 +137,28 @@ function pickBestMatch(results: TMDBMovie[], year: number): TMDBMovie | null {
  * and pick the result whose year is closest to the target.
  */
 export async function findMovieId(title: string, year: number): Promise<number | null> {
+  const cacheKey = `${title.toLowerCase().trim()}|${year}`;
+  const cachedId = movieIdCache.get(cacheKey);
+  if (cachedId != null) return cachedId;
+
   const search = (query: string, useYear: boolean) =>
     fetchTMDB<{ results: TMDBMovie[] }>('/search/movie', {
       query,
       ...(useYear ? { year: String(year) } : {}),
     });
 
+  const remember = (id: number): number => {
+    movieIdCache.set(cacheKey, id); // never expires — id↔title is stable
+    return id;
+  };
+
   // 1) Full title + year.
   let best = pickBestMatch((await search(title, true)).results, year);
-  if (best) return best.id;
+  if (best) return remember(best.id);
 
   // 2) Full title, no year filter.
   best = pickBestMatch((await search(title, false)).results, year);
-  if (best) return best.id;
+  if (best) return remember(best.id);
 
   // 3) Shorten the title progressively (drops a lost subtitle like
   //    "The Professional"). Helps titles that only match on the main word(s).
@@ -151,10 +170,10 @@ export async function findMovieId(title: string, year: number): Promise<number |
 
   for (const shortTitle of shorterTitles) {
     best = pickBestMatch((await search(shortTitle, true)).results, year);
-    if (best) return best.id;
+    if (best) return remember(best.id);
 
     best = pickBestMatch((await search(shortTitle, false)).results, year);
-    if (best) return best.id;
+    if (best) return remember(best.id);
   }
 
   return null;
@@ -164,6 +183,9 @@ export async function findMovieId(title: string, year: number): Promise<number |
  * Get full movie details by TMDB ID.
  */
 export async function getMovieDetails(movieId: number): Promise<MovieDetails | null> {
+  const cached = movieDetailsCache.get(String(movieId));
+  if (cached) return cached;
+
   try {
     const [details, credits, releaseDates] = await Promise.all([
       fetchTMDB<TMDBMovieDetails>(`/movie/${movieId}`),
@@ -192,7 +214,7 @@ export async function getMovieDetails(movieId: number): Promise<MovieDetails | n
       contentRating = theatrical?.certification || anyRated?.certification || null;
     }
 
-    return {
+    const result: MovieDetails = {
       id: details.id,
       title: details.title,
       overview: details.overview,
@@ -215,6 +237,10 @@ export async function getMovieDetails(movieId: number): Promise<MovieDetails | n
       revenue: details.revenue || 0,
       contentRating,
     };
+
+    // Cache the successful result so a slow first load is paid only once.
+    movieDetailsCache.set(String(movieId), result, ONE_HOUR * 24);
+    return result;
   } catch (error) {
     console.warn('[tmdb] movie details unavailable:', error instanceof Error ? error.name : 'error');
     return null;
