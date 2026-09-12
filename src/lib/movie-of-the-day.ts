@@ -60,6 +60,9 @@ export async function getMovieOfTheDay(): Promise<DailyMovie | null> {
     const data = await tmdbFetch<{ results: any[] }>('/movie/top_rated', {
       params: { page: String(page) },
       revalidate: 86400, // Cache 24h
+      // Fast-fail so the homepage isn't held up when TMDB is unreachable.
+      timeoutMs: 5000,
+      maxAttempts: 1,
     });
     const results = data.results || [];
     if (results.length === 0) return null;

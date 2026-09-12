@@ -68,6 +68,9 @@ export async function getMoviesByGenre(genreId: number, count: number = 20): Pro
         page: '1',
       },
       revalidate: 86400, // Cache 24h
+      // Fast-fail so a genre page renders its empty-state quickly if TMDB is down.
+      timeoutMs: 5000,
+      maxAttempts: 1,
     });
     const movies: GenreMovie[] = [];
 

@@ -106,11 +106,22 @@ export { TMDBUnreachableError } from './tmdb-client';
 
 /**
  * Fetch movies from a TMDB endpoint via the shared, key-safe client.
- * Uses a short revalidate (not `no-store`) so the homepage can still render
- * statically and its api_key never leaks into a dynamic-render error.
+ *
+ * `fast` uses a short timeout + single attempt so homepage/collection fetches
+ * fail QUICKLY (~5s) and fall back to cached/fallback content, instead of
+ * hanging ~45s on the patient default when TMDB is unreachable. Detail pages
+ * (a user clicked, expecting to wait) keep the patient default.
  */
-async function fetchFromTMDB(endpoint: string, params: Record<string, string> = {}): Promise<TMDBResponse> {
-  return tmdbFetch<TMDBResponse>(endpoint, { params, revalidate: 3600 });
+async function fetchFromTMDB(
+  endpoint: string,
+  params: Record<string, string> = {},
+  fast = false
+): Promise<TMDBResponse> {
+  return tmdbFetch<TMDBResponse>(endpoint, {
+    params,
+    revalidate: 3600,
+    ...(fast ? { timeoutMs: 5000, maxAttempts: 1 } : {}),
+  });
 }
 
 /**
@@ -118,7 +129,7 @@ async function fetchFromTMDB(endpoint: string, params: Record<string, string> = 
  */
 export async function getPopularMovies(page?: number): Promise<TMDBMovie[]> {
   const p = page ?? randomInt(1, 15);
-  const data = await fetchFromTMDB('/movie/popular', { page: String(p) });
+  const data = await fetchFromTMDB('/movie/popular', { page: String(p) }, true);
   return data.results;
 }
 
@@ -127,7 +138,7 @@ export async function getPopularMovies(page?: number): Promise<TMDBMovie[]> {
  */
 export async function getTopRatedMovies(page?: number): Promise<TMDBMovie[]> {
   const p = page ?? randomInt(1, 15);
-  const data = await fetchFromTMDB('/movie/top_rated', { page: String(p) });
+  const data = await fetchFromTMDB('/movie/top_rated', { page: String(p) }, true);
   return data.results;
 }
 
@@ -143,7 +154,7 @@ export async function discoverMovies(genreIds?: number[], page?: number): Promis
     with_genres: genres.join(','),
     sort_by: 'vote_average.desc',
     'vote_count.gte': '200',
-  });
+  }, true);
 
   return data.results;
 }
