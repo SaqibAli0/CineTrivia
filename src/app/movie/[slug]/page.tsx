@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { Clock, Star, Film, Globe, Sparkles, Calendar, DollarSign, TrendingUp, ArrowRight, Clapperboard } from 'lucide-react';
 import { fromSlug } from '@/lib/slug';
 import { SITE_URL } from '@/lib/site';
+import { TMDBUnreachableError } from '@/lib/tmdb-client';
 import { findMovieId, getMovieDetails, getSimilarMovies, getWatchProviders, getMovieTrailer } from '@/lib/tmdb-details';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/navbar';
@@ -81,15 +82,49 @@ function formatMoney(n: number): string {
   return `$${n}`;
 }
 
+/**
+ * Shown when the movie exists but TMDB is temporarily unreachable. This is NOT
+ * a 404 — the film is real, we just couldn't load its data right now.
+ */
+function MovieUnavailable({ title, year }: { title: string; year: number }) {
+  return (
+    <div className="bg-background min-h-screen text-foreground pt-16">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8">
+        <Navbar />
+        <main className="py-16 sm:py-24 text-center max-w-lg mx-auto space-y-4">
+          <Film className="w-12 h-12 text-muted-foreground mx-auto opacity-50" />
+          <h1 className="font-headline text-2xl sm:text-3xl text-foreground">
+            {title} ({year})
+          </h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            We couldn&apos;t load this movie&apos;s details right now — the movie
+            database is temporarily unavailable. Please try again in a moment.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Back to Home
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    </div>
+  );
+}
+
 export default async function MoviePage({ params }: PageProps) {
   const { slug } = await params;
   const parsed = fromSlug(slug);
   if (!parsed) notFound();
 
-  // Any TMDB call here can throw a raw network error (e.g. ECONNRESET when the
-  // API is unreachable). Catch it so a transient outage renders a 404 instead
-  // of crashing the whole prerender/build. The page will be generated on-demand
-  // and cached once TMDB is reachable again (dynamicParams + revalidate).
+  // A TMDB call can fail two very different ways:
+  //  1. The movie genuinely doesn't exist        → real 404 (notFound()).
+  //  2. TMDB is temporarily UNREACHABLE (network) → NOT a 404; show a "try
+  //     again" state. Returning 404 here would tell users/search engines the
+  //     movie doesn't exist when it actually does.
   let movie: Awaited<ReturnType<typeof getMovieDetails>> = null;
   let similarMovies: Awaited<ReturnType<typeof getSimilarMovies>> = [];
   let watchProviders: Awaited<ReturnType<typeof getWatchProviders>> = [];
@@ -97,6 +132,7 @@ export default async function MoviePage({ params }: PageProps) {
 
   try {
     const movieId = await findMovieId(parsed.title, parsed.year);
+    // No match returned (and TMDB WAS reachable) → the movie doesn't exist.
     if (!movieId) notFound();
 
     [movie, similarMovies, watchProviders, trailer] = await Promise.all([
@@ -106,13 +142,20 @@ export default async function MoviePage({ params }: PageProps) {
       getMovieTrailer(movieId),
     ]);
   } catch (error) {
-    // notFound() throws internally — let it propagate; swallow only real errors.
+    // notFound() throws internally — let it propagate as a real 404.
     if (error && typeof error === 'object' && 'digest' in error) throw error;
-    console.error(`[MoviePage] TMDB unavailable for "${slug}":`, error instanceof Error ? error.message : error);
-    notFound();
+    // TMDB unreachable → show the temporary-unavailable page, not a 404.
+    if (error instanceof TMDBUnreachableError) {
+      return <MovieUnavailable title={parsed.title} year={parsed.year} />;
+    }
+    // Unexpected error — log sanitized and fall back to unavailable, not 404.
+    console.warn(`[MoviePage] error for "${slug}":`, error instanceof Error ? error.name : 'error');
+    return <MovieUnavailable title={parsed.title} year={parsed.year} />;
   }
 
-  if (!movie) notFound();
+  // Details fetch itself returned null after a reachable search — treat as
+  // unavailable rather than a hard 404 (the id resolved, so the film exists).
+  if (!movie) return <MovieUnavailable title={parsed.title} year={parsed.year} />;
 
   const siteUrl = SITE_URL;
 
