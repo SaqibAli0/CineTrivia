@@ -7,7 +7,7 @@
  */
 
 import { isPornographic } from './content-filter';
-import { tmdbFetch } from './tmdb-client';
+import { tmdbFetch, TMDBUnreachableError } from './tmdb-client';
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
 
@@ -230,7 +230,11 @@ export async function verifyMovie(title: string, year?: number): Promise<Verifie
       posterUrl: getPosterUrl(match.poster_path, 'large'),
     };
   } catch (error) {
-    console.error('verifyMovie failed:', error instanceof Error ? error.message : error);
+    // Re-throw when TMDB is unreachable so the caller can tell "network down"
+    // apart from "no match found" (null). Otherwise a network blip would look
+    // like a failed verification and wrongly discard a good AI pick.
+    if (error instanceof TMDBUnreachableError) throw error;
+    console.warn('[verifyMovie] failed:', error instanceof Error ? error.name : 'error');
     return null;
   }
 }

@@ -18,6 +18,7 @@ import { recommendationCache } from '@/ai/services/recommendation-cache';
 import { recommendationResponseCache, ONE_HOUR } from '@/ai/services/cache';
 import { buildRecommendationPrompt } from '@/ai/utils/prompt-builder';
 import { verifyMovie } from '@/lib/tmdb';
+import { TMDBUnreachableError } from '@/lib/tmdb-client';
 
 export type { RecommendMovieInput, RecommendMovieOutput };
 
@@ -43,8 +44,14 @@ const recommendMovieFlow = ai.defineFlow(
     // Fetch context from Tavily (reduced to 5 results)
     const tavilyResults = await fetchMovieData(input.moodOrGenre);
 
-    // Generate, then validate against TMDB. Retry once if the first pick can't
-    // be verified (likely a hallucinated title), excluding it the second time.
+    // Generate, then (best-effort) validate against TMDB. Retry once if the
+    // first pick can't be verified as a REAL movie (likely a hallucination),
+    // excluding it the second time.
+    //
+    // Important: if TMDB is unreachable, we do NOT treat that as "unverified".
+    // Verification is a best-effort enrichment — when the network is down we
+    // keep the AI's original pick as-is, so we never swap a correct, on-genre
+    // recommendation for a worse fallback just because we couldn't reach TMDB.
     let output: RecommendMovieOutput | null = null;
 
     for (let attempt = 0; attempt < 2 && !output; attempt++) {
@@ -54,7 +61,19 @@ const recommendMovieFlow = ai.defineFlow(
       });
 
       const candidate = await generateWithFallback(prompt, input);
-      const verified = await verifyMovie(candidate.title, candidate.year);
+
+      let verified: Awaited<ReturnType<typeof verifyMovie>> = null;
+      let verificationSkipped = false;
+      try {
+        verified = await verifyMovie(candidate.title, candidate.year);
+      } catch (error) {
+        // TMDB unreachable — skip verification, trust the AI's pick.
+        if (error instanceof TMDBUnreachableError) {
+          verificationSkipped = true;
+        } else {
+          throw error;
+        }
+      }
 
       if (verified) {
         // Correct any hallucinated year/rating and enrich with real TMDB data.
@@ -66,11 +85,13 @@ const recommendMovieFlow = ai.defineFlow(
           genre: candidate.genre || verified.genre,
           description: candidate.description || verified.overview,
         };
+      } else if (verificationSkipped) {
+        // Couldn't verify due to network — accept the AI's original pick.
+        output = candidate;
       } else {
-        // Unverified — remember it so the retry avoids the same hallucination.
+        // Verified as NOT a real movie (hallucination) — remember + retry.
         recommendationCache.add(candidate.title, candidate.year);
-        // On the final attempt, fall back to the AI's raw output rather than failing.
-        if (attempt === 1) output = candidate;
+        if (attempt === 1) output = candidate; // final fallback
       }
     }
 

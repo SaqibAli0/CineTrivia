@@ -79,4 +79,15 @@ describe('verifyMovie', () => {
     expect(result).not.toBeNull();
     expect(result!.posterUrl).toContain('/p5.jpg');
   });
+
+  it('re-throws (not returns null) when TMDB is unreachable', async () => {
+    // Every attempt is a network failure → tmdbFetch throws TMDBUnreachableError.
+    vi.spyOn(global, 'fetch').mockRejectedValue(
+      Object.assign(new Error('fetch failed'), { code: 'ECONNRESET' })
+    );
+
+    await expect(verifyMovie('Inception', 2010)).rejects.toMatchObject({
+      name: 'TMDBUnreachableError',
+    });
+  });
 });
