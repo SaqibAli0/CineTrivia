@@ -57,6 +57,9 @@ function friendlyError(error: unknown, fallbackMessage: string): Error {
   if (raw.includes('TMDB') || raw.includes('TMDB_API_KEY')) {
     return new Error('Movie database is temporarily unavailable.');
   }
+  if (raw.includes('TVmaze')) {
+    return new Error('TV database is temporarily unavailable.');
+  }
 
   return new Error(fallbackMessage);
 }
@@ -68,7 +71,7 @@ export async function getMovieRecommendation(input: RecommendMovieInput): Promis
 
   try {
     const moodOrGenre = validateInput(input.moodOrGenre);
-    return await withRetry(() => recommendMovie({ moodOrGenre }));
+    return await withRetry(() => recommendMovie({ moodOrGenre, mediaType: input.mediaType }));
   } catch (error) {
     throw friendlyError(error, 'Could not get a recommendation right now. Please try again.');
   }
@@ -81,7 +84,7 @@ export async function getMovieFunFact(input: MovieFunFactInput) {
 
   try {
     const movieTitle = validateInput(input.movieTitle);
-    return await withRetry(() => movieFunFact({ movieTitle, skipCache: input.skipCache }));
+    return await withRetry(() => movieFunFact({ movieTitle, skipCache: input.skipCache, mediaType: input.mediaType }));
   } catch (error) {
     throw friendlyError(error, 'Could not fetch a fun fact right now. Please try again.');
   }

@@ -165,8 +165,8 @@ export default async function MoviePage({ params }: PageProps) {
               {movie.backdropUrl && (
                 <Image src={movie.backdropUrl} alt="" fill className="object-cover" priority sizes="100vw" aria-hidden="true" />
               )}
-              <div className="absolute inset-0 bg-background/80 dark:bg-background/85" />
-              <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/70" />
+              <div className="absolute inset-0 bg-background/85 dark:bg-background/88" />
+              <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/75" />
             </div>
             <div className="relative container mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-12 md:py-16">
               <div className="flex flex-col md:flex-row gap-6 md:gap-10">

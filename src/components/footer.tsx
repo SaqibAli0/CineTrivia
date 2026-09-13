@@ -21,7 +21,9 @@ export function Footer() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-foreground mb-3">Explore</p>
           <nav className="space-y-2 text-xs sm:text-sm text-muted-foreground" aria-label="Explore links">
-            <Link href="/" className="block hover:text-foreground transition-colors">Home</Link>
+            <Link href="/" className="block hover:text-foreground transition-colors">Movies</Link>
+            <Link href="/tv" className="block hover:text-foreground transition-colors">TV Shows</Link>
+            <Link href="/animation" className="block hover:text-foreground transition-colors">Animation</Link>
             <Link href="/genre" className="block hover:text-foreground transition-colors">Browse Genres</Link>
             <Link href="/blog" className="block hover:text-foreground transition-colors">Blog</Link>
           </nav>
@@ -58,6 +60,33 @@ export function Footer() {
       <div className="border-t border-border/40 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
         <p>&copy; 2025 CineTrivia. All rights reserved.</p>
         <p>CineTrivia is an independent platform.</p>
+      </div>
+
+      {/* Data attribution — TVmaze content is licensed CC BY-SA and requires
+          visible attribution with a link. TMDB attribution kept alongside. */}
+      <div className="pt-4 text-center sm:text-left">
+        <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
+          TV &amp; animated-series data provided by{" "}
+          <a
+            href="https://www.tvmaze.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground transition-colors"
+          >
+            TVmaze
+          </a>{" "}
+          (licensed under{" "}
+          <a
+            href="https://creativecommons.org/licenses/by-sa/4.0/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground transition-colors"
+          >
+            CC BY-SA
+          </a>
+          ). Movie &amp; animated-film data provided by TMDB. This product uses
+          the TMDB and TVmaze APIs but is not endorsed or certified by either.
+        </p>
       </div>
     </footer>
   );

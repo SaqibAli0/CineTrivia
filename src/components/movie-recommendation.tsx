@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { getMovieRecommendation, getMoviePoster } from "@/app/actions";
-import type { RecommendMovieOutput } from "@/ai/types";
+import type { RecommendMovieOutput, MediaKind } from "@/ai/types";
 import { Button } from "@/components/ui/button";
 import { Form, FormField, FormItem } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FunFactButton } from "./fun-fact-button";
 import { getHistory, addToHistory, type HistoryEntry } from "@/lib/history";
 import { toSlug } from "@/lib/slug";
+import { mediaHref } from "@/lib/media";
 import { KofiButton } from "./kofi-button";
 import Link from "next/link";
 
@@ -46,6 +47,9 @@ const moods = [
 
 export function MovieRecommendation() {
   const [recommendation, setRecommendation] = useState<RecommendMovieOutput | null>(null);
+  // What kind of title to recommend. Drives the AI mediaType + result link.
+  const [mediaType, setMediaType] = useState<MediaKind>("movie");
+  const [recommendedType, setRecommendedType] = useState<MediaKind>("movie");
   const [posterUrl, setPosterUrl] = useState("");
   const [isPosterLoading, setIsPosterLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -92,19 +96,23 @@ export function MovieRecommendation() {
     setShowHistory(false);
 
     try {
+      // Noun used in the prompt text so the request reads naturally for each
+      // media type (e.g. "a funny action TV show" / "animated title").
+      const noun = mediaType === "tv" ? "TV show" : mediaType === "animation" ? "animated title" : "movie";
       let inputText = "";
       const genreText = values.genres?.length ? values.genres.join(" ") : "";
 
       if (values.mood && genreText) {
-        inputText = `a ${values.mood.toLowerCase()} ${genreText.toLowerCase()} movie`;
+        inputText = `a ${values.mood.toLowerCase()} ${genreText.toLowerCase()} ${noun}`;
       } else if (values.mood) {
-        inputText = `a ${values.mood.toLowerCase()} movie`;
+        inputText = `a ${values.mood.toLowerCase()} ${noun}`;
       } else if (genreText) {
-        inputText = `a ${genreText.toLowerCase()} movie`;
+        inputText = `a ${genreText.toLowerCase()} ${noun}`;
       }
 
-      const result = await getMovieRecommendation({ moodOrGenre: inputText });
+      const result = await getMovieRecommendation({ moodOrGenre: inputText, mediaType });
       setRecommendation(result);
+      setRecommendedType(mediaType);
 
       // Load poster in background
       setIsPosterLoading(true);
@@ -175,15 +183,44 @@ export function MovieRecommendation() {
         <div className="space-y-6 sm:space-y-8">
           <div className="space-y-4 sm:space-y-6">
             <h1 className="font-headline text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-foreground leading-[1.1]">
-              Movie Recommendations — Find What to Watch
+              Recommendations — Find What to Watch
             </h1>
             <p className="text-muted-foreground text-xs sm:text-sm md:text-base max-w-md leading-relaxed">
-              Get personalized movie suggestions based on your mood. Select genres, pick a vibe, and discover the perfect film in seconds.
+              Get personalized picks based on your mood. Choose movies, TV shows, or animation, select genres, pick a vibe, and discover the perfect title in seconds.
             </p>
           </div>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8">
+              {/* Media type selector */}
+              <div>
+                <p className="text-[11px] tracking-widest uppercase text-muted-foreground mb-2 sm:mb-3">Type</p>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  {([
+                    { value: "movie", label: "Movies" },
+                    { value: "tv", label: "TV Shows" },
+                    { value: "animation", label: "Animation" },
+                  ] as { value: MediaKind; label: string }[]).map((opt) => {
+                    const active = mediaType === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setMediaType(opt.value)}
+                        aria-pressed={active}
+                        className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border text-xs sm:text-sm transition-colors ${
+                          active
+                            ? "bg-primary/10 border-primary text-primary"
+                            : "border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/40"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <FormField
                 control={form.control}
                 name="genres"
@@ -321,7 +358,9 @@ export function MovieRecommendation() {
           {isLoading && !recommendation && !showHistory && (
             <div className="bg-[hsl(var(--rec-surface))] rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 md:p-8 h-full flex flex-col items-center justify-center min-h-[240px] sm:min-h-[320px]">
               <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary mb-3" />
-              <p className="text-[hsl(var(--rec-muted))] text-xs sm:text-sm">Finding a great movie for you...</p>
+              <p className="text-[hsl(var(--rec-muted))] text-xs sm:text-sm">
+                Finding a great {mediaType === "tv" ? "show" : mediaType === "animation" ? "animated title" : "movie"} for you...
+              </p>
             </div>
           )}
 
@@ -364,12 +403,18 @@ export function MovieRecommendation() {
                 </p>
 
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                  <Link href={`/movie/${toSlug(recommendation.title, recommendation.year)}`}>
+                  <Link
+                    href={mediaHref({
+                      mediaType: recommendedType === "tv" ? "tv" : "movie",
+                      isAnimation: recommendedType === "animation",
+                      slug: toSlug(recommendation.title, recommendation.year),
+                    })}
+                  >
                     <Button className="bg-[hsl(var(--rec-text))] text-[hsl(var(--rec-surface))] hover:bg-[hsl(var(--rec-text))]/80 rounded-full px-4 sm:px-5 py-2 sm:py-2.5 h-auto text-xs sm:text-sm font-medium">
                       View Details
                     </Button>
                   </Link>
-                  <FunFactButton movieTitle={recommendation.title} />
+                  <FunFactButton movieTitle={recommendation.title} mediaType={recommendedType} />
                   <span className="text-xs sm:text-sm font-semibold text-[hsl(var(--rec-text))]">
                     {recommendation.rating?.toFixed(1) || "8.5"}
                     <span className="text-[hsl(var(--rec-muted))] font-normal"> /10</span>

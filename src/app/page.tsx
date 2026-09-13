@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Metadata } from "next";
+import { Tv, Sparkles } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { MovieRecommendation } from "@/components/movie-recommendation";
 import { MovieGrid } from "@/components/movie-grid";
@@ -100,6 +101,35 @@ export default async function Home() {
             >
               View all genres &rarr;
             </Link>
+          </section>
+
+          {/* Explore other sections — TV shows & animation */}
+          <section>
+            <h2 className="font-headline text-2xl sm:text-3xl text-foreground mb-5">
+              More to Explore
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <Link
+                href="/tv"
+                className="group flex items-center gap-4 p-5 rounded-xl bg-card border border-border hover:border-primary/40 transition-all duration-200 hover:shadow-sm"
+              >
+                <Tv className="w-8 h-8 text-primary shrink-0" />
+                <div>
+                  <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">TV Shows</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Seasons, episodes, cast &amp; where to watch.</p>
+                </div>
+              </Link>
+              <Link
+                href="/animation"
+                className="group flex items-center gap-4 p-5 rounded-xl bg-card border border-border hover:border-primary/40 transition-all duration-200 hover:shadow-sm"
+              >
+                <Sparkles className="w-8 h-8 text-primary shrink-0" />
+                <div>
+                  <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">Animation &amp; Anime</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Animated films &amp; series from every region.</p>
+                </div>
+              </Link>
+            </div>
           </section>
 
           {/* How It Works — targets "how to get movie recommendations" queries */}

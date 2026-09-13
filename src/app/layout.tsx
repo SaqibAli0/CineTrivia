@@ -21,10 +21,10 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   title: {
-    default: 'CineTrivia — Movie Recommendations, Fun Facts & Where to Watch',
+    default: 'CineTrivia — Movies, TV Shows & Animation: Facts & Where to Watch',
     template: '%s | CineTrivia',
   },
-  description: 'Discover movies with personalized recommendations, fun facts, and trivia. Find where to watch, explore similar films, and get suggestions based on your mood.',
+  description: 'Discover movies, TV shows, and animation with personalized recommendations, fun facts, and trivia. Find where to watch, explore similar titles, and get suggestions based on your mood.',
   metadataBase: new URL(SITE_URL),
   alternates: {
     canonical: '/',
@@ -32,15 +32,15 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: 'CineTrivia',
-    title: 'CineTrivia — Movie Recommendations & Fun Facts',
-    description: 'Discover movies with personalized recommendations, fun facts, and trivia.',
+    title: 'CineTrivia — Movies, TV Shows & Animation',
+    description: 'Discover movies, TV shows, and animation with personalized recommendations, fun facts, and trivia.',
     url: SITE_URL,
     images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: 'CineTrivia' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'CineTrivia — Movie Recommendations & Fun Facts',
-    description: 'Discover movies with personalized recommendations, fun facts, and trivia.',
+    title: 'CineTrivia — Movies, TV Shows & Animation',
+    description: 'Discover movies, TV shows, and animation with personalized recommendations, fun facts, and trivia.',
     images: [`${SITE_URL}/opengraph-image`],
   },
   robots: {
@@ -76,7 +76,7 @@ export default function RootLayout({
     // Populated from env-driven social profiles; omitted entirely when none set
     // so we never emit an empty sameAs array.
     ...(SOCIAL_PROFILES.length > 0 ? { sameAs: SOCIAL_PROFILES } : {}),
-    description: 'Discover movies with personalized recommendations, fun facts, and trivia.',
+    description: 'Discover movies, TV shows, and animation with personalized recommendations, fun facts, and trivia.',
   };
 
   const websiteSchema = {
@@ -84,7 +84,7 @@ export default function RootLayout({
     '@type': 'WebSite',
     name: 'CineTrivia',
     url: SITE_URL,
-    description: 'Discover movies with personalized recommendations, fun facts, and trivia.',
+    description: 'Discover movies, TV shows, and animation with personalized recommendations, fun facts, and trivia.',
     potentialAction: {
       '@type': 'SearchAction',
       target: {

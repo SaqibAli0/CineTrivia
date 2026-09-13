@@ -5,6 +5,8 @@ interface MovieJsonLdProps {
   movie: MovieDetails;
   slug: string;
   trailer?: MovieTrailer | null;
+  /** Route base for the canonical url. Defaults to "/movie". */
+  basePath?: '/movie' | '/animation';
 }
 
 /**
@@ -12,7 +14,7 @@ interface MovieJsonLdProps {
  * Outputs Movie schema (+ AggregateRating) and VideoObject for trailers.
  * FAQ schema removed — Google deprecated FAQ rich results on May 7, 2026.
  */
-export function MovieJsonLd({ movie, slug, trailer }: MovieJsonLdProps) {
+export function MovieJsonLd({ movie, slug, trailer, basePath = '/movie' }: MovieJsonLdProps) {
   const siteUrl = SITE_URL;
 
   const jsonLd: Record<string, unknown> = {
@@ -41,7 +43,7 @@ export function MovieJsonLd({ movie, slug, trailer }: MovieJsonLdProps) {
       worstRating: 0,
       ratingCount: movie.voteCount,
     } : undefined,
-    url: `${siteUrl}/movie/${slug}`,
+    url: `${siteUrl}${basePath}/${slug}`,
     productionCompany: movie.productionCompanies.map((name) => ({
       '@type': 'Organization',
       name,

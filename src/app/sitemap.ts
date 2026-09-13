@@ -1,5 +1,7 @@
 import { MetadataRoute } from 'next';
 import { getPopularMoviesList } from '@/lib/tmdb-details';
+import { getPopularShowsList } from '@/lib/tvmaze';
+import { getPopularAnimatedFilmsList } from '@/lib/tmdb-tv';
 import { getAllPosts } from '@/lib/blog';
 import { GENRES } from '@/lib/genres';
 import { SITE_URL } from '@/lib/site';
@@ -39,6 +41,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 0.7,
     },
+    {
+      url: `${SITE_URL}/tv`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/animation`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
   ];
 
   // Blog posts
@@ -72,5 +86,39 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.warn('[sitemap] movies unavailable:', error instanceof Error ? error.name : 'error');
   }
 
-  return [...staticPages, ...blogPages, ...genrePages, ...moviePages];
+  // Dynamic TV pages from TVmaze popular shows (non-animation).
+  let tvPages: MetadataRoute.Sitemap = [];
+  try {
+    const shows = await getPopularShowsList(3, false);
+    tvPages = shows.map((s) => ({
+      url: `${SITE_URL}/tv/${s.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    }));
+  } catch (error) {
+    console.warn('[sitemap] tv shows unavailable:', error instanceof Error ? error.name : 'error');
+  }
+
+  // Dynamic animation pages: animated series (TVmaze) + animated films (TMDB).
+  let animationPages: MetadataRoute.Sitemap = [];
+  try {
+    const [series, films] = await Promise.all([
+      getPopularShowsList(3, true).catch(() => []),
+      getPopularAnimatedFilmsList(2).catch(() => []),
+    ]);
+    const seen = new Set<string>();
+    animationPages = [...series, ...films]
+      .filter((s) => (seen.has(s.slug) ? false : (seen.add(s.slug), true)))
+      .map((s) => ({
+        url: `${SITE_URL}/animation/${s.slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly' as const,
+        priority: 0.8,
+      }));
+  } catch (error) {
+    console.warn('[sitemap] animation unavailable:', error instanceof Error ? error.name : 'error');
+  }
+
+  return [...staticPages, ...blogPages, ...genrePages, ...moviePages, ...tvPages, ...animationPages];
 }

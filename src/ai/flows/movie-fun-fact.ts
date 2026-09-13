@@ -12,8 +12,11 @@ import { z } from 'genkit';
 import { funFactCache } from '@/ai/services/cache';
 
 const MovieFunFactInputSchema = z.object({
-  movieTitle: z.string().describe('The title of the movie.'),
+  movieTitle: z.string().describe('The title of the movie/show.'),
   skipCache: z.boolean().optional().describe('If true, generate a fresh fact instead of returning cached.'),
+  mediaType: z.enum(['movie', 'tv', 'animation']).optional().describe(
+    "What kind of title this is: 'movie' (default), 'tv', or 'animation'."
+  ),
 });
 export type MovieFunFactInput = z.infer<typeof MovieFunFactInputSchema>;
 
@@ -26,12 +29,16 @@ export async function movieFunFact(input: MovieFunFactInput): Promise<MovieFunFa
   return movieFunFactFlow(input);
 }
 
+// Neutral wording ("title") so the same prompt works for movies, TV shows,
+// and animated titles without a separate prompt per media type.
+const FUN_FACT_PROMPT = `You are an entertainment trivia expert. Generate one interesting and relevant fun fact or behind-the-scenes trivia about the title "{{{movieTitle}}}" (a movie, TV show, or animated production). Keep it concise — two to three sentences max.`;
+
 const primaryPrompt = ai.definePrompt({
   name: 'movieFunFactPrompt',
   input: { schema: MovieFunFactInputSchema },
   output: { schema: MovieFunFactOutputSchema },
   model: MODELS.PRIMARY,
-  prompt: `You are a movie trivia expert. Generate one interesting and relevant fun fact or behind-the-scenes trivia about the movie "{{{movieTitle}}}". Keep it concise — two to three sentences max.`,
+  prompt: FUN_FACT_PROMPT,
 });
 
 const fallbackPrompt = ai.definePrompt({
@@ -39,7 +46,7 @@ const fallbackPrompt = ai.definePrompt({
   input: { schema: MovieFunFactInputSchema },
   output: { schema: MovieFunFactOutputSchema },
   model: MODELS.FALLBACK,
-  prompt: `You are a movie trivia expert. Generate one interesting and relevant fun fact or behind-the-scenes trivia about the movie "{{{movieTitle}}}". Keep it concise — two to three sentences max.`,
+  prompt: FUN_FACT_PROMPT,
 });
 
 const movieFunFactFlow = ai.defineFlow(
@@ -49,7 +56,7 @@ const movieFunFactFlow = ai.defineFlow(
     outputSchema: MovieFunFactOutputSchema,
   },
   async (input) => {
-    const cacheKey = input.movieTitle.toLowerCase().trim();
+    const cacheKey = `${input.mediaType ?? 'movie'}|${input.movieTitle.toLowerCase().trim()}`;
 
     // Return cached fact unless caller wants a fresh one
     if (!input.skipCache) {

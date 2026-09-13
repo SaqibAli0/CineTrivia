@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
         pathname: '/t/p/**',
       },
       {
+        // TVmaze poster/cast images (TV shows & animated series).
+        protocol: 'https',
+        hostname: 'static.tvmaze.com',
+        pathname: '/uploads/images/**',
+      },
+      {
         protocol: 'https',
         hostname: 'placehold.co',
         pathname: '/**',

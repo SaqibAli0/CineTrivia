@@ -4,7 +4,9 @@ import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import { SearchBox } from '@/components/search-box';
 import { SearchResults } from '@/components/search-results';
+import { MediaSearchResults } from '@/components/media-search-results';
 import { searchMovies } from '@/app/search-actions';
+import { searchMedia } from '@/app/media-search-actions';
 
 interface PageProps {
   searchParams: Promise<{ q?: string }>;
@@ -28,7 +30,20 @@ export default async function SearchPage({ searchParams }: PageProps) {
   const { q } = await searchParams;
   const query = (q ?? '').trim();
 
-  const initial = query ? await searchMovies(query, 1) : null;
+  const [initial, tvAnimation] = query
+    ? await Promise.all([
+        searchMovies(query, 1),
+        // TV + animation matches (TVmaze) shown as a secondary section.
+        searchMedia(query, 'tv').then((r) => ({
+          items: r.items,
+          unavailable: r.unavailable,
+        })),
+      ])
+    : [null, { items: [], unavailable: false }];
+
+  // Also fetch animated-series matches so anime surfaces under /animation links.
+  const animation = query ? await searchMedia(query, 'animation') : { items: [], unavailable: false };
+  const tvAndAnimationItems = [...tvAnimation.items, ...animation.items];
 
   return (
     <div className="bg-background min-h-screen text-foreground pt-16">
@@ -40,7 +55,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
               {query ? (
                 <>Search results for &ldquo;{query}&rdquo;</>
               ) : (
-                'Search Movies'
+                'Search Movies, TV & Animation'
               )}
             </h1>
             {query && initial && (
@@ -52,23 +67,35 @@ export default async function SearchPage({ searchParams }: PageProps) {
             )}
           </div>
 
-          <SearchBox placeholder="Search any movie by title..." />
+          <SearchBox placeholder="Search movies, TV shows & animation..." />
 
           {!query ? (
             <div className="text-center py-16 space-y-3">
               <SearchIcon className="w-12 h-12 text-muted-foreground mx-auto opacity-50" />
-              <p className="text-lg font-medium text-foreground">Search for a movie</p>
+              <p className="text-lg font-medium text-foreground">Search for a title</p>
               <p className="text-muted-foreground text-sm">
-                Type a title above to find films, ratings, and where to watch.
+                Type a movie, TV show, or animated title above to find facts, ratings, and where to watch.
               </p>
             </div>
           ) : (
-            <SearchResults
-              query={query}
-              initialMovies={initial?.movies ?? []}
-              initialHasMore={initial?.hasMore ?? false}
-              initialUnavailable={initial?.unavailable ?? false}
-            />
+            <div className="space-y-12">
+              <section>
+                <h2 className="font-headline text-xl sm:text-2xl text-foreground mb-5">Movies</h2>
+                <SearchResults
+                  query={query}
+                  initialMovies={initial?.movies ?? []}
+                  initialHasMore={initial?.hasMore ?? false}
+                  initialUnavailable={initial?.unavailable ?? false}
+                />
+              </section>
+
+              {tvAndAnimationItems.length > 0 && (
+                <section>
+                  <h2 className="font-headline text-xl sm:text-2xl text-foreground mb-5">TV Shows &amp; Animation</h2>
+                  <MediaSearchResults query={query} items={tvAndAnimationItems} />
+                </section>
+              )}
+            </div>
           )}
         </main>
         <Footer />

@@ -19,6 +19,8 @@ import { recommendationResponseCache, ONE_HOUR } from '@/ai/services/cache';
 import { buildRecommendationPrompt } from '@/ai/utils/prompt-builder';
 import { verifyMovie } from '@/lib/tmdb';
 import { TMDBUnreachableError } from '@/lib/tmdb-client';
+import { verifyShow } from '@/lib/tvmaze';
+import { TVmazeUnreachableError } from '@/lib/tvmaze-client';
 
 export type { RecommendMovieInput, RecommendMovieOutput };
 
@@ -33,7 +35,10 @@ const recommendMovieFlow = ai.defineFlow(
     outputSchema: RecommendMovieOutputSchema,
   },
   async (input) => {
-    const cacheKey = input.moodOrGenre.toLowerCase().trim();
+    const mediaType = input.mediaType ?? 'movie';
+    // Cache key includes media type so a movie and a TV pick for the same
+    // mood/genre don't collide.
+    const cacheKey = `${mediaType}|${input.moodOrGenre.toLowerCase().trim()}`;
 
     // Check response cache first
     const cached = recommendationResponseCache.get(cacheKey);
@@ -58,17 +63,32 @@ const recommendMovieFlow = ai.defineFlow(
       const prompt = buildRecommendationPrompt({
         tavilyResults,
         excludeList: recommendationCache.getRecentMovies(),
+        mediaType,
       });
 
       const candidate = await generateWithFallback(prompt, input);
 
-      let verified: Awaited<ReturnType<typeof verifyMovie>> = null;
+      // Verify against the RIGHT source: movies → TMDB, tv/animation → TVmaze.
+      // For 'animation' the pick may be an animated FILM (TMDB) or an animated
+      // SERIES (TVmaze), so try TVmaze first (as an animation) and fall back to
+      // TMDB when there's no animated-series match.
+      let verified:
+        | { title: string; year: number; rating: number; genre: string; overview: string }
+        | null = null;
       let verificationSkipped = false;
+
       try {
-        verified = await verifyMovie(candidate.title, candidate.year);
+        if (mediaType === 'tv') {
+          verified = await verifyShow(candidate.title, candidate.year);
+        } else if (mediaType === 'animation') {
+          const asSeries = await verifyShow(candidate.title, candidate.year, true);
+          verified = asSeries ?? (await verifyMovie(candidate.title, candidate.year));
+        } else {
+          verified = await verifyMovie(candidate.title, candidate.year);
+        }
       } catch (error) {
-        // TMDB unreachable — skip verification, trust the AI's pick.
-        if (error instanceof TMDBUnreachableError) {
+        // Either source unreachable — skip verification, trust the AI's pick.
+        if (error instanceof TMDBUnreachableError || error instanceof TVmazeUnreachableError) {
           verificationSkipped = true;
         } else {
           throw error;
@@ -76,7 +96,7 @@ const recommendMovieFlow = ai.defineFlow(
       }
 
       if (verified) {
-        // Correct any hallucinated year/rating and enrich with real TMDB data.
+        // Correct any hallucinated year/rating and enrich with real data.
         output = {
           ...candidate,
           title: verified.title,
@@ -89,14 +109,14 @@ const recommendMovieFlow = ai.defineFlow(
         // Couldn't verify due to network — accept the AI's original pick.
         output = candidate;
       } else {
-        // Verified as NOT a real movie (hallucination) — remember + retry.
+        // Verified as NOT real (hallucination) — remember + retry.
         recommendationCache.add(candidate.title, candidate.year);
         if (attempt === 1) output = candidate; // final fallback
       }
     }
 
     if (!output) {
-      throw new Error('Failed to generate a verifiable movie recommendation');
+      throw new Error('Failed to generate a verifiable recommendation');
     }
 
     // Track in dedup cache so subsequent requests rotate to a different film.

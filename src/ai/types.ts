@@ -1,10 +1,21 @@
 import {z} from 'genkit';
 
+/**
+ * Which kind of title to recommend. 'movie' is the default (preserves the
+ * original movie-only behavior); 'tv' asks for a TV series; 'animation' asks
+ * for an animated title (film or series).
+ */
+export const MediaKindSchema = z.enum(['movie', 'tv', 'animation']);
+export type MediaKind = z.infer<typeof MediaKindSchema>;
+
 // Movie recommendation schemas
 export const RecommendMovieInputSchema = z.object({
   moodOrGenre: z
     .string()
-    .describe('The mood (e.g., happy, sad) or genre (e.g., action, comedy, drama) for the movie recommendation.'),
+    .describe('The mood (e.g., happy, sad) or genre (e.g., action, comedy, drama) for the recommendation.'),
+  mediaType: MediaKindSchema.optional().describe(
+    "What to recommend: 'movie' (default), 'tv', or 'animation'."
+  ),
 });
 
 export const RecommendMovieOutputSchema = z.object({
@@ -35,8 +46,11 @@ export type GenerateMoviePosterOutput = z.infer<typeof GenerateMoviePosterOutput
 
 // Movie fun fact schemas
 export const MovieFunFactInputSchema = z.object({
-  movieTitle: z.string().describe('The title of the movie to get a fun fact about.'),
+  movieTitle: z.string().describe('The title of the movie/show to get a fun fact about.'),
   skipCache: z.boolean().optional().describe('If true, generate a fresh fact.'),
+  mediaType: MediaKindSchema.optional().describe(
+    "What kind of title this is: 'movie' (default), 'tv', or 'animation'. Affects phrasing."
+  ),
 });
 
 export type MovieFunFactInput = z.infer<typeof MovieFunFactInputSchema>;

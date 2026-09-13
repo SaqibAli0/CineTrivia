@@ -11,9 +11,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { getMovieFunFact } from "@/app/actions";
+import type { MediaKind } from "@/ai/types";
 import { Loader2, Sparkles } from "lucide-react";
 
-export function FunFactButton({ movieTitle }: { movieTitle: string }) {
+export function FunFactButton({ movieTitle, mediaType }: { movieTitle: string; mediaType?: MediaKind }) {
   const [fact, setFact] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -24,7 +25,7 @@ export function FunFactButton({ movieTitle }: { movieTitle: string }) {
     setFact("");
     setError("");
     try {
-      const result = await getMovieFunFact({ movieTitle, skipCache: hasLoadedOnce });
+      const result = await getMovieFunFact({ movieTitle, skipCache: hasLoadedOnce, mediaType });
       setFact(result.funFact);
       setHasLoadedOnce(true);
     } catch (e: any) {
