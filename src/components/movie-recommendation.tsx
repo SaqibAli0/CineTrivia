@@ -45,6 +45,23 @@ const moods = [
   "Epic", "Quirky",
 ];
 
+/**
+ * Hosts allowed by next.config.ts `images.remotePatterns`. A poster URL from
+ * any other host (e.g. an unexpected Tavily fallback result) would crash
+ * `next/image`, so we render the placeholder for those instead.
+ */
+const ALLOWED_POSTER_HOSTS = ['image.tmdb.org', 'static.tvmaze.com', 'm.media-amazon.com', 'placehold.co'];
+
+function isRenderablePoster(url: string): boolean {
+  if (!url) return false;
+  if (url.startsWith('data:')) return true; // AI-generated data URIs are fine
+  try {
+    return ALLOWED_POSTER_HOSTS.includes(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
 export function MovieRecommendation() {
   const [recommendation, setRecommendation] = useState<RecommendMovieOutput | null>(null);
   // What kind of title to recommend. Drives the AI mediaType + result link.
@@ -114,43 +131,49 @@ export function MovieRecommendation() {
       setRecommendation(result);
       setRecommendedType(mediaType);
 
-      // Load poster in background
-      setIsPosterLoading(true);
-      getMoviePoster({
-        title: result.title,
-        description: result.description,
-        genre: result.genre,
-      })
-        .then((res) => {
-          if (res.posterDataUri) {
-            setPosterUrl(res.posterDataUri);
-            // Save to history with poster
-            addToHistory({
-              title: result.title,
-              year: result.year,
-              genre: result.genre,
-              description: result.description,
-              rating: result.rating,
-              ageRating: result.ageRating,
-              posterUrl: res.posterDataUri,
-            });
-            setHistory(getHistory());
-          }
-        })
-        .catch(() => {
-          // Save to history without poster
-          addToHistory({
-            title: result.title,
-            year: result.year,
-            genre: result.genre,
-            description: result.description,
-            rating: result.rating,
-            ageRating: result.ageRating,
-            posterUrl: "",
-          });
+      const saveHistory = (poster: string) =>
+        addToHistory({
+          title: result.title,
+          year: result.year,
+          genre: result.genre,
+          description: result.description,
+          rating: result.rating,
+          ageRating: result.ageRating,
+          posterUrl: poster,
+        });
+
+      // Prefer the REAL verified poster from the correct source (TVmaze for
+      // tv/anime, TMDB for movies) — this is always right for the media type.
+      if (result.posterUrl) {
+        setPosterUrl(result.posterUrl);
+        setIsPosterLoading(false);
+        saveHistory(result.posterUrl);
+        setHistory(getHistory());
+      } else {
+        // No verified poster (verification skipped/unavailable). Fall back to
+        // the poster finder — but only for MOVIES, since it searches TMDB
+        // movie titles and would return a wrong movie poster for a TV show.
+        setIsPosterLoading(true);
+        if (mediaType === "movie") {
+          getMoviePoster({ title: result.title, description: result.description, genre: result.genre })
+            .then((res) => {
+              setPosterUrl(res.posterDataUri || "");
+              saveHistory(res.posterDataUri || "");
+              setHistory(getHistory());
+            })
+            .catch(() => {
+              saveHistory("");
+              setHistory(getHistory());
+            })
+            .finally(() => setIsPosterLoading(false));
+        } else {
+          // TV/animation with no verified poster → placeholder, no movie search.
+          setPosterUrl("");
+          setIsPosterLoading(false);
+          saveHistory("");
           setHistory(getHistory());
-        })
-        .finally(() => setIsPosterLoading(false));
+        }
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -378,8 +401,8 @@ export function MovieRecommendation() {
                   </div>
                   {isPosterLoading ? (
                     <Skeleton className="absolute inset-0" />
-                  ) : posterUrl ? (
-                    <Image src={posterUrl} alt={recommendation.title} fill className="object-cover" />
+                  ) : isRenderablePoster(posterUrl) ? (
+                    <Image src={posterUrl} alt={recommendation.title} fill sizes="(max-width: 640px) 25vw, 160px" className="object-cover" />
                   ) : null}
                 </div>
 

@@ -15,7 +15,6 @@ import {
 } from '@/ai/types';
 import { searchMoviesByGenre } from '@/ai/services/tavily';
 import { recommendationCache } from '@/ai/services/recommendation-cache';
-import { recommendationResponseCache, ONE_HOUR } from '@/ai/services/cache';
 import { buildRecommendationPrompt } from '@/ai/utils/prompt-builder';
 import { verifyMovie } from '@/lib/tmdb';
 import { TMDBUnreachableError } from '@/lib/tmdb-client';
@@ -36,15 +35,14 @@ const recommendMovieFlow = ai.defineFlow(
   },
   async (input) => {
     const mediaType = input.mediaType ?? 'movie';
-    // Cache key includes media type so a movie and a TV pick for the same
-    // mood/genre don't collide.
-    const cacheKey = `${mediaType}|${input.moodOrGenre.toLowerCase().trim()}`;
 
-    // Check response cache first
-    const cached = recommendationResponseCache.get(cacheKey);
-    if (cached) {
-      return cached as RecommendMovieOutput;
-    }
+    // NOTE: We intentionally do NOT return a cached response for the same
+    // mood/genre. The whole point of "get a recommendation" is that clicking
+    // again gives a DIFFERENT pick when the user didn't like the last one.
+    // Variety comes from `recommendationCache` (the exclude list) which tells
+    // the model not to repeat recent picks; abuse is bounded by the per-minute
+    // rate limiter in src/app/actions.ts, so dropping the response cache stays
+    // zero-cost while making repeat clicks feel fresh.
 
     // Fetch context from Tavily (reduced to 5 results)
     const tavilyResults = await fetchMovieData(input.moodOrGenre);
@@ -73,7 +71,7 @@ const recommendMovieFlow = ai.defineFlow(
       // SERIES (TVmaze), so try TVmaze first (as an animation) and fall back to
       // TMDB when there's no animated-series match.
       let verified:
-        | { title: string; year: number; rating: number; genre: string; overview: string }
+        | { title: string; year: number; rating: number; genre: string; overview: string; posterUrl: string }
         | null = null;
       let verificationSkipped = false;
 
@@ -96,7 +94,9 @@ const recommendMovieFlow = ai.defineFlow(
       }
 
       if (verified) {
-        // Correct any hallucinated year/rating and enrich with real data.
+        // Correct any hallucinated year/rating and enrich with real data,
+        // including the REAL poster from the correct source (TVmaze for
+        // tv/anime, TMDB for movies) so the card never shows a wrong poster.
         output = {
           ...candidate,
           title: verified.title,
@@ -104,6 +104,7 @@ const recommendMovieFlow = ai.defineFlow(
           rating: verified.rating > 0 ? verified.rating : candidate.rating,
           genre: candidate.genre || verified.genre,
           description: candidate.description || verified.overview,
+          posterUrl: verified.posterUrl || undefined,
         };
       } else if (verificationSkipped) {
         // Couldn't verify due to network — accept the AI's original pick.
@@ -119,11 +120,9 @@ const recommendMovieFlow = ai.defineFlow(
       throw new Error('Failed to generate a verifiable recommendation');
     }
 
-    // Track in dedup cache so subsequent requests rotate to a different film.
+    // Track in the dedup/exclude cache so the NEXT request for any mood/genre
+    // rotates to a different title.
     recommendationCache.add(output.title, output.year);
-
-    // Cache the full response for 1 hour to stay zero-cost.
-    recommendationResponseCache.set(cacheKey, output, ONE_HOUR);
 
     return output;
   }

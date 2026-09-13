@@ -76,9 +76,9 @@ export function CastCarousel({ cast }: CastCarouselProps) {
         className="flex gap-4 overflow-x-auto pb-2 scroll-smooth"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {cast.map((actor) => (
+        {cast.map((actor, i) => (
           <div
-            key={actor.name}
+            key={`${actor.name}-${actor.character}-${i}`}
             className="shrink-0 w-[130px] sm:w-[145px] snap-start rounded-xl overflow-hidden bg-card border border-border hover:border-primary/30 transition-colors"
           >
             <div className="w-full aspect-[3/4] bg-muted relative overflow-hidden">

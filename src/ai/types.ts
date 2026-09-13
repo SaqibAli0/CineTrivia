@@ -19,12 +19,19 @@ export const RecommendMovieInputSchema = z.object({
 });
 
 export const RecommendMovieOutputSchema = z.object({
-  title: z.string().describe('The title of the recommended movie.'),
-  year: z.number().describe('The release year of the movie.'),
-  genre: z.string().describe('The primary genre of the movie.'),
-  description: z.string().describe('A brief, compelling plot summary of the movie.'),
-  rating: z.number().describe("The movie's critical rating out of 10, can be a decimal (e.g., 8.5)."),
-  ageRating: z.string().describe('The age rating of the movie (e.g., PG-13, R, G).'),
+  title: z.string().describe('The title of the recommended title.'),
+  year: z.number().describe('The release/first-air year.'),
+  genre: z.string().describe('The primary genre.'),
+  description: z.string().describe('A brief, compelling plot summary.'),
+  rating: z.number().describe("The critical rating out of 10, can be a decimal (e.g., 8.5)."),
+  ageRating: z.string().describe('The age rating (e.g., PG-13, R, G, TV-MA).'),
+  /**
+   * Real poster URL from the SAME source that verified the pick (TVmaze for
+   * TV/anime, TMDB for movies/animated films). Populated by the flow after
+   * verification so the card shows the correct poster — never a movie poster
+   * for a TV show. Empty when verification was skipped/unavailable.
+   */
+  posterUrl: z.string().optional().describe('Verified poster URL from the correct source.'),
 });
 
 export type RecommendMovieInput = z.infer<typeof RecommendMovieInputSchema>;

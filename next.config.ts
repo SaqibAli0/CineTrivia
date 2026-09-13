@@ -22,6 +22,12 @@ const nextConfig: NextConfig = {
         pathname: '/uploads/images/**',
       },
       {
+        // IMDb/Amazon images returned by the Tavily poster fallback.
+        protocol: 'https',
+        hostname: 'm.media-amazon.com',
+        pathname: '/**',
+      },
+      {
         protocol: 'https',
         hostname: 'placehold.co',
         pathname: '/**',
