@@ -62,7 +62,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     movie = await getMovieDetails(movieId);
   } catch (error) {
     // TMDB unreachable during metadata generation — don't crash the build.
-    console.error(`[generateMetadata] TMDB unavailable for "${slug}":`, error instanceof Error ? error.message : error);
+    // Warn (not error): the page still renders, so this is expected noise on a
+    // flaky network, not a failure.
+    console.warn(`[generateMetadata] TMDB unavailable for "${slug}":`, error instanceof Error ? error.name : 'error');
     return { title: 'Movie' };
   }
   if (!movie) return { title: 'Movie Not Found' };

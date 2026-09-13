@@ -15,12 +15,13 @@
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
 /**
- * Per-attempt network timeout (ms). Generous enough that a COLD connection
- * (fresh DNS + TLS handshake on the first request) can complete — an overly
- * short timeout aborts the first hit and only the warmed-up retry succeeds,
- * which shows up as "fails first, works on refresh".
+ * Per-attempt network timeout (ms). The first attempt gets ~60% of this so a
+ * dead/blocked network fails fast (the visible "slow load"), while later
+ * retries escalate to give a COLD connection (fresh DNS + TLS) time to
+ * complete — avoiding the "fails first, works on refresh" pattern. 10s here
+ * → attempts of ~6s / 10s / 14s (was 9s / 15s / 21s, which felt sluggish).
  */
-const DEFAULT_TIMEOUT_MS = 15000;
+const DEFAULT_TIMEOUT_MS = 10000;
 /** Attempts before giving up on a transient network failure. */
 const DEFAULT_MAX_ATTEMPTS = 3;
 

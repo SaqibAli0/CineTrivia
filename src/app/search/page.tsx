@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { Search as SearchIcon } from 'lucide-react';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
-import { SearchBox } from '@/components/search-box';
+import { MediaSearchBox } from '@/components/media-search-box';
 import { SearchResults } from '@/components/search-results';
 import { MediaSearchResults } from '@/components/media-search-results';
 import { searchMovies } from '@/app/search-actions';
@@ -11,6 +11,10 @@ import { searchMedia } from '@/app/media-search-actions';
 interface PageProps {
   searchParams: Promise<{ q?: string }>;
 }
+
+// Search results depend entirely on the `q` param and must re-run on every
+// query change (never served stale from the router/full-route cache).
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const { q } = await searchParams;
@@ -67,7 +71,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
             )}
           </div>
 
-          <SearchBox placeholder="Search movies, TV shows & animation..." />
+          <MediaSearchBox scope="all" placeholder="Search movies, TV shows & animation..." />
 
           {!query ? (
             <div className="text-center py-16 space-y-3">
@@ -81,7 +85,11 @@ export default async function SearchPage({ searchParams }: PageProps) {
             <div className="space-y-12">
               <section>
                 <h2 className="font-headline text-xl sm:text-2xl text-foreground mb-5">Movies</h2>
+                {/* key={query} forces a remount when the query changes so the
+                    client component's state (seeded from initial* props via
+                    useState) resets instead of showing the previous search. */}
                 <SearchResults
+                  key={query}
                   query={query}
                   initialMovies={initial?.movies ?? []}
                   initialHasMore={initial?.hasMore ?? false}
@@ -92,7 +100,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
               {tvAndAnimationItems.length > 0 && (
                 <section>
                   <h2 className="font-headline text-xl sm:text-2xl text-foreground mb-5">TV Shows &amp; Animation</h2>
-                  <MediaSearchResults query={query} items={tvAndAnimationItems} />
+                  <MediaSearchResults key={query} query={query} items={tvAndAnimationItems} />
                 </section>
               )}
             </div>

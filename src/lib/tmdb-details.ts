@@ -139,7 +139,9 @@ function pickBestMatch(results: TMDBMovie[], year: number): TMDBMovie | null {
 export async function findMovieId(title: string, year: number): Promise<number | null> {
   const cacheKey = `${title.toLowerCase().trim()}|${year}`;
   const cachedId = movieIdCache.get(cacheKey);
-  if (cachedId != null) return cachedId;
+  // A cached -1 means "we already searched and found nothing" — don't re-run
+  // the (up to 6) sequential searches on every visit (mirrors the TV side).
+  if (cachedId != null) return cachedId < 0 ? null : cachedId;
 
   const search = (query: string, useYear: boolean) =>
     fetchTMDB<{ results: TMDBMovie[] }>('/search/movie', {
@@ -176,6 +178,9 @@ export async function findMovieId(title: string, year: number): Promise<number |
     if (best) return remember(best.id);
   }
 
+  // Genuine no-match (TMDB was reachable, nothing found) → cache the miss so
+  // repeat visits to this slug don't re-run the whole broadening loop.
+  movieIdCache.set(cacheKey, -1);
   return null;
 }
 
