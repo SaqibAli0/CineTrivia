@@ -15,7 +15,10 @@ vi.mock('@/lib/tmdb-tv', () => ({
 }));
 vi.mock('@/lib/blog', () => ({ getAllPosts: () => [] }));
 vi.mock('@/lib/genres', () => ({ GENRES: [{ slug: 'action', name: 'Action' }] }));
-vi.mock('@/lib/site', () => ({ SITE_URL: 'https://example.com' }));
+vi.mock('@/lib/site', () => ({
+  SITE_URL: 'https://example.com',
+  CONTENT_UPDATED_DATE: new Date('2026-09-13'),
+}));
 
 import sitemap from './sitemap';
 

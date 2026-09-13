@@ -4,52 +4,58 @@ import { getPopularShowsList } from '@/lib/tvmaze';
 import { getPopularAnimatedFilmsList } from '@/lib/tmdb-tv';
 import { getAllPosts } from '@/lib/blog';
 import { GENRES } from '@/lib/genres';
-import { SITE_URL } from '@/lib/site';
+import { SITE_URL, CONTENT_UPDATED_DATE } from '@/lib/site';
 
 export const revalidate = 86400; // revalidate once per day
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Stable last-modified for structural/templated pages. Using a fixed date
+  // (not `new Date()`) avoids stamping every URL with "today" on each daily
+  // regeneration — a churn signal that makes search engines distrust the
+  // freshness data.
+  const updated = CONTENT_UPDATED_DATE;
+
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: SITE_URL,
-      lastModified: new Date(),
+      lastModified: updated,
       changeFrequency: 'daily',
       priority: 1,
     },
     {
       url: `${SITE_URL}/about`,
-      lastModified: new Date(),
+      lastModified: updated,
       changeFrequency: 'monthly',
       priority: 0.5,
     },
     {
       url: `${SITE_URL}/privacy`,
-      lastModified: new Date(),
+      lastModified: updated,
       changeFrequency: 'monthly',
       priority: 0.3,
     },
     {
       url: `${SITE_URL}/blog`,
-      lastModified: new Date(),
+      lastModified: updated,
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
       url: `${SITE_URL}/genre`,
-      lastModified: new Date(),
+      lastModified: updated,
       changeFrequency: 'monthly',
       priority: 0.7,
     },
     {
       url: `${SITE_URL}/tv`,
-      lastModified: new Date(),
+      lastModified: updated,
       changeFrequency: 'daily',
       priority: 0.9,
     },
     {
       url: `${SITE_URL}/animation`,
-      lastModified: new Date(),
+      lastModified: updated,
       changeFrequency: 'daily',
       priority: 0.9,
     },
@@ -66,7 +72,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Genre pages
   const genrePages: MetadataRoute.Sitemap = GENRES.map((genre) => ({
     url: `${SITE_URL}/genre/${genre.slug}`,
-    lastModified: new Date(),
+    lastModified: updated,
     changeFrequency: 'weekly' as const,
     priority: 0.6,
   }));
@@ -78,7 +84,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const movies = await getPopularMoviesList(5); // 5 pages = ~100 movies — limits crawler-driven function calls
     moviePages = movies.map((movie) => ({
       url: `${SITE_URL}/movie/${movie.slug}`,
-      lastModified: new Date(),
+      lastModified: updated,
       changeFrequency: 'weekly' as const,
       priority: 0.8,
     }));
@@ -92,7 +98,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const shows = await getPopularShowsList(3, false);
     tvPages = shows.map((s) => ({
       url: `${SITE_URL}/tv/${s.slug}`,
-      lastModified: new Date(),
+      lastModified: updated,
       changeFrequency: 'weekly' as const,
       priority: 0.8,
     }));
@@ -112,7 +118,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter((s) => (seen.has(s.slug) ? false : (seen.add(s.slug), true)))
       .map((s) => ({
         url: `${SITE_URL}/animation/${s.slug}`,
-        lastModified: new Date(),
+        lastModified: updated,
         changeFrequency: 'weekly' as const,
         priority: 0.8,
       }));
