@@ -7,20 +7,31 @@ interface MovieJsonLdProps {
   trailer?: MovieTrailer | null;
   /** Route base for the canonical url. Defaults to "/movie". */
   basePath?: '/movie' | '/animation';
+  /** When true, add "Anime" to genre and an "{title} (anime)" alternateName. */
+  isAnime?: boolean;
 }
 
 /**
- * JSON-LD structured data for movie pages.
- * Outputs Movie schema (+ AggregateRating) and VideoObject for trailers.
- * FAQ schema removed — Google deprecated FAQ rich results on May 7, 2026.
+ * Build the Movie JSON-LD object. Pure (no JSX) so it can be unit-tested.
+ * When `isAnime` is set, "Anime" is added to the genre list (de-duped) and an
+ * "{title} (anime)" alternateName is emitted for alias queries.
  */
-export function MovieJsonLd({ movie, slug, trailer, basePath = '/movie' }: MovieJsonLdProps) {
+export function buildMovieSchema(
+  movie: MovieDetails,
+  slug: string,
+  basePath: '/movie' | '/animation' = '/movie',
+  isAnime = false
+): Record<string, unknown> {
   const siteUrl = SITE_URL;
+
+  const hasAnimeGenre = movie.genres.some((g) => g.toLowerCase() === 'anime');
+  const genre = isAnime && !hasAnimeGenre ? [...movie.genres, 'Anime'] : movie.genres;
 
   const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Movie',
     name: movie.title,
+    alternateName: isAnime ? `${movie.title} (anime)` : undefined,
     description: movie.overview,
     image: movie.posterUrl || undefined,
     datePublished: movie.year ? `${movie.year}-01-01` : undefined,
@@ -34,7 +45,7 @@ export function MovieJsonLd({ movie, slug, trailer, basePath = '/movie' }: Movie
       '@type': 'Person',
       name: member.name,
     })),
-    genre: movie.genres,
+    genre,
     duration: movie.runtime ? `PT${movie.runtime}M` : undefined,
     aggregateRating: movie.rating > 0 ? {
       '@type': 'AggregateRating',
@@ -54,6 +65,17 @@ export function MovieJsonLd({ movie, slug, trailer, basePath = '/movie' }: Movie
   if (movie.contentRating) {
     jsonLd.contentRating = movie.contentRating;
   }
+
+  return jsonLd;
+}
+
+/**
+ * JSON-LD structured data for movie pages.
+ * Outputs Movie schema (+ AggregateRating) and VideoObject for trailers.
+ * FAQ schema removed — Google deprecated FAQ rich results on May 7, 2026.
+ */
+export function MovieJsonLd({ movie, slug, trailer, basePath = '/movie', isAnime = false }: MovieJsonLdProps) {
+  const jsonLd = buildMovieSchema(movie, slug, basePath, isAnime);
 
   // VideoObject schema for trailers — earns video rich results in Google
   // Required: name, thumbnailUrl, uploadDate, and either contentUrl or embedUrl

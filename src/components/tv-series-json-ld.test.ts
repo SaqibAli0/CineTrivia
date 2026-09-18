@@ -24,6 +24,7 @@ function makeShow(overrides: Partial<TvShowDetails> = {}): TvShowDetails {
     cast: [{ name: 'Winona Ryder', character: 'Joyce', profileUrl: '', voice: false }],
     imdbId: 'tt4574334',
     isAnimation: false,
+    isAnime: false,
     tvmazeUrl: 'https://www.tvmaze.com/shows/2993/stranger-things',
     ...overrides,
   };
@@ -50,5 +51,31 @@ describe('buildTvSeriesSchema', () => {
     const schema = buildTvSeriesSchema(makeShow({ isAnimation: true }), '/animation/naruto-2002');
     expect(schema.url).toContain('/animation/naruto-2002');
     expect(schema['@type']).toBe('TVSeries');
+  });
+});
+
+describe('buildTvSeriesSchema — anime awareness', () => {
+  it('adds "Anime" to genre and an alternateName for an anime series', () => {
+    const schema = buildTvSeriesSchema(
+      makeShow({ title: 'Naruto', genres: ['Action', 'Adventure'], isAnimation: true, isAnime: true }),
+      '/animation/naruto-2002'
+    );
+    expect(schema.genre).toContain('Anime');
+    expect(schema.alternateName).toBe('Naruto (anime)');
+  });
+
+  it('does not duplicate an existing "Anime" genre', () => {
+    const schema = buildTvSeriesSchema(
+      makeShow({ genres: ['Anime', 'Action'], isAnime: true }),
+      '/animation/x-2002'
+    );
+    const genres = schema.genre as string[];
+    expect(genres.filter((g) => g === 'Anime')).toHaveLength(1);
+  });
+
+  it('omits anime terms and alternateName for a non-anime series', () => {
+    const schema = buildTvSeriesSchema(makeShow(), '/tv/stranger-things-2016');
+    expect(schema.genre).not.toContain('Anime');
+    expect(schema.alternateName).toBeUndefined();
   });
 });

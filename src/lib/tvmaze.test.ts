@@ -142,6 +142,37 @@ describe('getShowDetails', () => {
       profileUrl: 'p.jpg',
       voice: false,
     });
+    // Live-action English drama → neither animation nor anime.
+    expect(details!.isAnimation).toBe(false);
+    expect(details!.isAnime).toBe(false);
+  });
+
+  it('sets isAnime for a Japanese/anime-tagged series, not for a Western cartoon', async () => {
+    // Anime series: Japanese language + "Anime" tag.
+    mockFetch.mockImplementation(async (endpoint: string) => {
+      if (endpoint === '/shows/2')
+        return makeShow({ id: 2, name: 'Naruto', language: 'Japanese', genres: ['Anime', 'Action'] });
+      return [];
+    });
+    const anime = await getShowDetails(2);
+    expect(anime!.isAnimation).toBe(true);
+    expect(anime!.isAnime).toBe(true);
+
+    // Western cartoon: English, Animation tag, no anime studio/tag.
+    mockFetch.mockImplementation(async (endpoint: string) => {
+      if (endpoint === '/shows/3')
+        return makeShow({
+          id: 3,
+          name: 'The Simpsons',
+          language: 'English',
+          genres: ['Animation', 'Comedy'],
+          network: { id: 5, name: 'FOX', country: { name: 'United States', code: 'US' } },
+        });
+      return [];
+    });
+    const cartoon = await getShowDetails(3);
+    expect(cartoon!.isAnimation).toBe(true);
+    expect(cartoon!.isAnime).toBe(false);
   });
 
   it('returns null for a pornographic show', async () => {

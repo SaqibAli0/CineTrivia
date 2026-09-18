@@ -22,6 +22,7 @@ import { toSlug } from './slug';
 import { tvmazeFetch } from './tvmaze-client';
 import { ServerCache, ONE_HOUR } from '@/ai/services/cache';
 import type { MediaItem } from './media';
+import { isAnime } from './media-classify';
 
 // ─── Raw TVmaze response shapes (only the fields we use) ──────────────────────
 
@@ -115,6 +116,12 @@ export interface TvShowDetails {
   imdbId: string | null;
   /** Whether this show belongs in the Animation section. */
   isAnimation: boolean;
+  /**
+   * Whether this show is specifically ANIME (a subset of `isAnimation`): an
+   * explicit "Anime" tag, Japanese-language animation, or a known anime
+   * studio/network. Drives anime-aware SEO copy/metadata/schema.
+   */
+  isAnime: boolean;
   /** Canonical TVmaze page (for attribution links). */
   tvmazeUrl: string;
 }
@@ -380,6 +387,12 @@ export async function getShowDetails(showId: number): Promise<TvShowDetails | nu
     cast,
     imdbId: show.externals?.imdb ?? null,
     isAnimation: isAnimationShow(show),
+    isAnime: isAnime({
+      isAnimation: isAnimationShow(show),
+      language: show.language,
+      genres,
+      studio: show.network?.name || show.webChannel?.name,
+    }),
     tvmazeUrl: show.url,
   };
 

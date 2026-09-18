@@ -13,6 +13,7 @@ import {
   Clapperboard,
 } from 'lucide-react';
 import { SITE_URL } from '@/lib/site';
+import { genreSlug } from '@/lib/genres';
 import type { MovieDetails, SimilarMovie, WatchProvider, MovieTrailer } from '@/lib/tmdb-details';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/navbar';
@@ -33,6 +34,8 @@ interface AnimatedFilmBodyProps {
   trailer: MovieTrailer | null;
   /** Full detail path, e.g. "/animation/spirited-away-2001". */
   path: string;
+  /** True when the film is anime (drives anime-worded copy + schema). */
+  isAnime?: boolean;
 }
 
 function formatMoney(n: number): string {
@@ -47,7 +50,7 @@ function formatMoney(n: number): string {
  * Mirrors the movie page but links/canonicalizes under /animation and emits a
  * Movie JSON-LD (correct for a film, even in the Animation section).
  */
-export function AnimatedFilmBody({ movie, similar, providers, trailer, path }: AnimatedFilmBodyProps) {
+export function AnimatedFilmBody({ movie, similar, providers, trailer, path, isAnime = false }: AnimatedFilmBodyProps) {
   const siteUrl = SITE_URL;
 
   const breadcrumbSchema = {
@@ -63,7 +66,7 @@ export function AnimatedFilmBody({ movie, similar, providers, trailer, path }: A
   return (
     <div className="bg-background min-h-screen text-foreground pt-16">
       <MediaRetryReset path={path} />
-      <MovieJsonLd movie={movie} slug={path.replace(/^\/animation\//, '')} trailer={trailer} basePath="/animation" />
+      <MovieJsonLd movie={movie} slug={path.replace(/^\/animation\//, '')} trailer={trailer} basePath="/animation" isAnime={isAnime} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <div className="container mx-auto px-4 sm:px-6 md:px-8">
         <Navbar />
@@ -165,7 +168,7 @@ export function AnimatedFilmBody({ movie, similar, providers, trailer, path }: A
             <section>
               <h2 className="font-headline text-xl sm:text-2xl text-foreground mb-5 flex items-center gap-2">
                 <Film className="w-5 h-5 text-primary" />
-                Animation Facts
+                {isAnime ? 'Anime Facts' : 'Animation Facts'}
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
                 <FactCard label="Release Year" value={String(movie.year)} icon={<Calendar className="w-5 h-5" />} />
@@ -175,6 +178,12 @@ export function AnimatedFilmBody({ movie, similar, providers, trailer, path }: A
                 {movie.budget > 0 && <FactCard label="Budget" value={formatMoney(movie.budget)} icon={<DollarSign className="w-5 h-5" />} />}
                 {movie.revenue > 0 && <FactCard label="Box Office" value={formatMoney(movie.revenue)} icon={<TrendingUp className="w-5 h-5" />} />}
               </div>
+              {movie.productionCompanies.length > 0 && (
+                <div className="mt-5 p-4 rounded-xl bg-card border border-border">
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">{isAnime ? 'Studio' : 'Production Companies'}</p>
+                  <p className="text-sm font-medium text-foreground">{movie.productionCompanies.join(' • ')}</p>
+                </div>
+              )}
             </section>
 
             <AdSenseSlot slot={process.env.NEXT_PUBLIC_ADSENSE_MOVIE_SLOT || ''} format="horizontal" className="my-4" />
@@ -188,6 +197,80 @@ export function AnimatedFilmBody({ movie, similar, providers, trailer, path }: A
                 <SimilarMoviesGrid movies={similar} />
               </section>
             )}
+
+            {/* FAQ — targets "is X an anime", "where to watch X anime" queries.
+                The film body previously had no FAQ block. */}
+            <section>
+              <h2 className="font-headline text-xl sm:text-2xl text-foreground mb-5 flex items-center gap-2">
+                <Film className="w-5 h-5 text-primary" />
+                Frequently Asked Questions
+              </h2>
+              <div className="space-y-3">
+                {isAnime && (
+                  <details className="group rounded-xl bg-card border border-border p-4 cursor-pointer">
+                    <summary className="font-medium text-sm text-foreground list-none flex items-center justify-between">
+                      Is {movie.title} an anime?
+                      <span className="text-muted-foreground group-open:rotate-180 transition-transform text-xs">▼</span>
+                    </summary>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-3 leading-relaxed">
+                      Yes. {movie.title} ({movie.year}) is an anime film{movie.productionCompanies.length > 0 ? `, produced by ${movie.productionCompanies.join(', ')}` : ''}.
+                    </p>
+                  </details>
+                )}
+                <details className="group rounded-xl bg-card border border-border p-4 cursor-pointer">
+                  <summary className="font-medium text-sm text-foreground list-none flex items-center justify-between">
+                    Where can I watch {movie.title}{isAnime ? ' anime' : ''}?
+                    <span className="text-muted-foreground group-open:rotate-180 transition-transform text-xs">▼</span>
+                  </summary>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-3 leading-relaxed">
+                    Check the &quot;Where to Watch&quot; section above for current streaming platforms, rental, and purchase options for {movie.title} ({movie.year}){isAnime ? ' — subbed and dubbed where available' : ''}.
+                  </p>
+                </details>
+                <details className="group rounded-xl bg-card border border-border p-4 cursor-pointer">
+                  <summary className="font-medium text-sm text-foreground list-none flex items-center justify-between">
+                    What is {movie.title} about?
+                    <span className="text-muted-foreground group-open:rotate-180 transition-transform text-xs">▼</span>
+                  </summary>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-3 leading-relaxed">{movie.overview}</p>
+                </details>
+                {movie.productionCompanies.length > 0 && (
+                  <details className="group rounded-xl bg-card border border-border p-4 cursor-pointer">
+                    <summary className="font-medium text-sm text-foreground list-none flex items-center justify-between">
+                      Who {isAnime ? 'animated' : 'made'} {movie.title}?
+                      <span className="text-muted-foreground group-open:rotate-180 transition-transform text-xs">▼</span>
+                    </summary>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-3 leading-relaxed">
+                      {movie.title} was {isAnime ? 'animated' : 'produced'} by {movie.productionCompanies.join(', ')}{movie.director && movie.director !== 'Unknown' ? ` and directed by ${movie.director}` : ''}.
+                    </p>
+                  </details>
+                )}
+              </div>
+            </section>
+
+            {/* Genre links + hub link — internal linking / crawl paths for SEO. */}
+            <section>
+              <h2 className="font-headline text-xl sm:text-2xl text-foreground mb-4 flex items-center gap-2">
+                <Film className="w-5 h-5 text-primary" />
+                Explore More {isAnime ? 'Anime' : 'Animation'} by Genre
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {movie.genres.map((genre) => (
+                  <Link
+                    key={genre}
+                    href={`/genre/${genreSlug(genre)}`}
+                    className="px-4 py-2 rounded-full bg-card border border-border hover:border-primary/40 hover:text-primary text-sm font-medium text-muted-foreground transition-all"
+                  >
+                    {genre} Movies
+                  </Link>
+                ))}
+                <Link
+                  href="/animation"
+                  className="px-4 py-2 rounded-full bg-card border border-border hover:border-primary/40 hover:text-primary text-sm font-medium text-muted-foreground transition-all"
+                >
+                  All Animation &amp; Anime →
+                </Link>
+              </div>
+            </section>
 
             <section className="text-center py-12 sm:py-16 rounded-2xl bg-card border border-border">
               <Film className="w-8 h-8 text-primary mx-auto mb-4" />

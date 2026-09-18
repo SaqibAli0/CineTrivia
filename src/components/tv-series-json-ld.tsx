@@ -14,10 +14,19 @@ interface TvSeriesJsonLdProps {
  */
 export function buildTvSeriesSchema(show: TvShowDetails, path: string): Record<string, unknown> {
   const siteUrl = SITE_URL;
+
+  // For anime, ensure "Anime" is present in the genre list (de-duped,
+  // case-insensitive) and expose an "{title} (anime)" alias so entity/alias
+  // queries match. Non-anime series are unchanged.
+  const hasAnimeGenre = show.genres.some((g) => g.toLowerCase() === 'anime');
+  const genre = show.isAnime && !hasAnimeGenre ? [...show.genres, 'Anime'] : show.genres;
+  const alternateName = show.isAnime ? `${show.title} (anime)` : undefined;
+
   return {
     '@context': 'https://schema.org',
     '@type': 'TVSeries',
     name: show.title,
+    alternateName,
     description: show.overview,
     image: show.posterUrl || undefined,
     datePublished: show.year ? `${show.year}-01-01` : undefined,
@@ -27,7 +36,7 @@ export function buildTvSeriesSchema(show: TvShowDetails, path: string): Record<s
       '@type': 'Person',
       name: member.name,
     })),
-    genre: show.genres,
+    genre,
     aggregateRating:
       show.rating > 0
         ? {

@@ -14,6 +14,7 @@ import {
   Clapperboard,
 } from 'lucide-react';
 import { SITE_URL } from '@/lib/site';
+import { genreSlug } from '@/lib/genres';
 import type { TvShowDetails } from '@/lib/tvmaze';
 import type { TvGapFill } from '@/lib/tmdb-tv';
 import { Button } from '@/components/ui/button';
@@ -47,7 +48,11 @@ interface MediaDetailBodyProps {
 export function MediaDetailBody({ show, gap, path, sectionLabel }: MediaDetailBodyProps) {
   const siteUrl = SITE_URL;
   const { similar, providers, trailer, backdropUrl } = gap;
-  const heading = sectionLabel === 'Animation' ? 'Animation Facts' : 'Show Facts';
+  const heading = show.isAnime
+    ? 'Anime Facts'
+    : sectionLabel === 'Animation'
+    ? 'Animation Facts'
+    : 'Show Facts';
 
   const yearRange =
     show.endYear && show.endYear !== show.year
@@ -215,13 +220,24 @@ export function MediaDetailBody({ show, gap, path, sectionLabel }: MediaDetailBo
                 Frequently Asked Questions
               </h2>
               <div className="space-y-3">
+                {show.isAnime && (
+                  <details className="group rounded-xl bg-card border border-border p-4 cursor-pointer">
+                    <summary className="font-medium text-sm text-foreground list-none flex items-center justify-between">
+                      Is {show.title} an anime?
+                      <span className="text-muted-foreground group-open:rotate-180 transition-transform text-xs">▼</span>
+                    </summary>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-3 leading-relaxed">
+                      Yes. {show.title} ({show.year}) is an anime series{show.network && show.network !== 'Unknown' ? ` that aired on ${show.network}` : ''}.
+                    </p>
+                  </details>
+                )}
                 <details className="group rounded-xl bg-card border border-border p-4 cursor-pointer">
                   <summary className="font-medium text-sm text-foreground list-none flex items-center justify-between">
-                    Where can I watch {show.title}?
+                    Where can I watch {show.title}{show.isAnime ? ' anime' : ''}?
                     <span className="text-muted-foreground group-open:rotate-180 transition-transform text-xs">▼</span>
                   </summary>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-3 leading-relaxed">
-                    Check the &quot;Where to Watch&quot; section above for current streaming platforms and options for {show.title}.
+                    Check the &quot;Where to Watch&quot; section above for current streaming platforms and options for {show.title}{show.isAnime ? ' — subbed and dubbed where available' : ''}.
                   </p>
                 </details>
                 <details className="group rounded-xl bg-card border border-border p-4 cursor-pointer">
@@ -256,6 +272,35 @@ export function MediaDetailBody({ show, gap, path, sectionLabel }: MediaDetailBo
                 )}
               </div>
             </section>
+
+            {/* Genre links + hub link — internal linking / crawl paths for SEO. */}
+            {show.genres.length > 0 && (
+              <section>
+                <h2 className="font-headline text-xl sm:text-2xl text-foreground mb-4 flex items-center gap-2">
+                  <Tv className="w-5 h-5 text-primary" />
+                  Explore More by Genre
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {show.genres.map((genre) => (
+                    <Link
+                      key={genre}
+                      href={`/genre/${genreSlug(genre)}`}
+                      className="px-4 py-2 rounded-full bg-card border border-border hover:border-primary/40 hover:text-primary text-sm font-medium text-muted-foreground transition-all"
+                    >
+                      {genre}
+                    </Link>
+                  ))}
+                  {sectionLabel === 'Animation' && (
+                    <Link
+                      href="/animation"
+                      className="px-4 py-2 rounded-full bg-card border border-border hover:border-primary/40 hover:text-primary text-sm font-medium text-muted-foreground transition-all"
+                    >
+                      All Animation &amp; Anime →
+                    </Link>
+                  )}
+                </div>
+              </section>
+            )}
 
             <section className="text-center py-12 sm:py-16 rounded-2xl bg-card border border-border">
               <Tv className="w-8 h-8 text-primary mx-auto mb-4" />

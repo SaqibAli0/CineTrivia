@@ -50,9 +50,6 @@ export function WatchButtons({ movieTitle, year, providers }: WatchButtonsProps)
             </a>
           ))}
         </div>
-        <p className="text-[10px] text-muted-foreground/60 mt-3">
-          As an Amazon Associate I earn from qualifying purchases. Availability may vary by region. Some links are affiliate links — we may earn a commission at no extra cost to you.
-        </p>
       </div>
     );
   }

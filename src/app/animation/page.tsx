@@ -12,13 +12,14 @@ import type { MediaItem } from '@/lib/media';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: 'Animation & Anime — Facts & Where to Watch',
+  title: 'Anime & Animation — Watch Anime Online, Facts & Where to Stream',
   description:
-    'Browse animated films and series from every region, including anime. Facts, cast, ratings, and where to watch on CineTrivia.',
+    'Browse anime and animated films and series — from Studio Ghibli and top anime studios to Pixar. Watch anime online, get facts, cast, ratings, and where to stream, subbed and dubbed.',
+  keywords: ['anime', 'watch anime online', 'anime series', 'anime movies', 'animation', 'subbed and dubbed'],
   alternates: { canonical: '/animation' },
   openGraph: {
-    title: 'Animation & Anime | CineTrivia',
-    description: 'Browse animated films and series from every region, including anime.',
+    title: 'Anime & Animation | CineTrivia',
+    description: 'Watch anime online plus animated films and series from every region. Facts, cast, ratings, and where to stream.',
     type: 'website',
   },
 };
@@ -66,17 +67,27 @@ export default async function AnimationLandingPage() {
 
           <div>
             <h1 className="font-headline text-3xl sm:text-4xl md:text-5xl text-foreground mb-3">
-              Animation &amp; Anime
+              Anime &amp; Animation
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base max-w-2xl">
               Animated films and series from every region — from Pixar and Studio Ghibli to
               anime classics. Facts, cast, ratings, and where to watch.
             </p>
+            <p className="text-muted-foreground text-sm sm:text-base max-w-2xl mt-3">
+              Looking for anime? Explore anime series and anime films from studios like Studio
+              Ghibli, MAPPA, Ufotable, and Madhouse — find episodes, cast, and where to stream
+              online, subbed and dubbed.
+            </p>
           </div>
 
-          <MediaSearchBox scope="animation" placeholder="Search animation & anime..." />
+          <MediaSearchBox scope="animation" placeholder="Search anime & animation..." />
 
-          <MediaGrid items={items} emptyMessage="Animated titles will appear here shortly." />
+          <section id="popular-anime" className="scroll-mt-20">
+            <h2 className="font-headline text-2xl sm:text-3xl text-foreground mb-4">
+              Popular Anime &amp; Animation
+            </h2>
+            <MediaGrid items={items} emptyMessage="Animated titles will appear here shortly." />
+          </section>
         </main>
         <Footer />
       </div>

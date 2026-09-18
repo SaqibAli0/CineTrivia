@@ -9,6 +9,7 @@ import { findMovieId, getMovieDetails, getSimilarMovies, getWatchProviders, getM
 import { MediaDetailBody } from '@/components/media-detail-body';
 import { AnimatedFilmBody } from '@/components/animated-film-body';
 import { MediaUnavailable } from '@/components/media-unavailable';
+import { isAnime, buildMetaCopy } from '@/lib/media-classify';
 
 // Pre-generate a small batch of popular animation pages (series + films).
 export async function generateStaticParams() {
@@ -53,8 +54,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     // Series first, then film.
     const show = await getShowDetailsBySlug(parsed.title, parsed.year);
     if (show && show.isAnimation) {
-      const title = `${show.title} (${show.year}) — Animation Facts & Where to Watch`;
-      const description = `Discover ${show.title} (${show.year}): ${show.overview.slice(0, 120)}...`;
+      // Anime series → "anime" wording; other animated series → "animation".
+      const { title, description } = buildMetaCopy({
+        kind: show.isAnime ? 'anime-series' : 'animated-film',
+        title: show.title,
+        year: show.year,
+        overview: show.overview,
+      });
       return {
         title,
         description,
@@ -68,8 +74,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (movieId) {
       const movie = await getMovieDetails(movieId);
       if (movie) {
-        const title = `${movie.title} (${movie.year}) — Animation Facts & Where to Watch`;
-        const description = `Discover ${movie.title} (${movie.year}). ${movie.overview.slice(0, 120)}...`;
+        // Derive anime-ness for films from language + production companies.
+        const animeFilm = isAnime({
+          isAnimation: true,
+          language: movie.language,
+          genres: movie.genres,
+          studios: movie.productionCompanies,
+        });
+        const { title, description } = buildMetaCopy({
+          kind: animeFilm ? 'anime-film' : 'animated-film',
+          title: movie.title,
+          year: movie.year,
+          overview: movie.overview,
+        });
         return {
           title,
           description,
@@ -122,6 +139,13 @@ export default async function AnimationPage({ params }: PageProps) {
       getMovieTrailer(movieId),
     ]);
 
+    const animeFilm = isAnime({
+      isAnimation: true,
+      language: movie.language,
+      genres: movie.genres,
+      studios: movie.productionCompanies,
+    });
+
     return (
       <AnimatedFilmBody
         movie={movie}
@@ -129,6 +153,7 @@ export default async function AnimationPage({ params }: PageProps) {
         providers={providersR.status === 'fulfilled' ? providersR.value : []}
         trailer={trailerR.status === 'fulfilled' ? trailerR.value : null}
         path={path}
+        isAnime={animeFilm}
       />
     );
   } catch (error) {

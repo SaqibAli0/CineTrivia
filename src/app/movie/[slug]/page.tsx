@@ -7,6 +7,8 @@ import { fromSlug } from '@/lib/slug';
 import { SITE_URL } from '@/lib/site';
 import { TMDBUnreachableError } from '@/lib/tmdb-client';
 import { findMovieId, getMovieDetails, getSimilarMovies, getWatchProviders, getMovieTrailer } from '@/lib/tmdb-details';
+import { isAnime, buildMetaCopy } from '@/lib/media-classify';
+import { genreSlug } from '@/lib/genres';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
@@ -68,8 +70,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: 'Movie' };
   }
   if (!movie) return { title: 'Movie Not Found' };
-  const title = `${movie.title} (${movie.year}) — Movie Facts & Where to Watch`;
-  const description = `Discover fun facts about ${movie.title} (${movie.year}). ${movie.overview.slice(0, 120)}... Find where to watch, cast info, and similar movies.`;
+  // An anime film reached via /movie should still read as anime; otherwise it's
+  // a plain movie. Routed through the shared, type-adaptive copy builder.
+  const animeFilm = isAnime({
+    isAnimation: movie.genres.some((g) => g.toLowerCase() === 'animation'),
+    language: movie.language,
+    genres: movie.genres,
+    studios: movie.productionCompanies,
+  });
+  const { title, description } = buildMetaCopy({
+    kind: animeFilm ? 'anime-film' : 'movie',
+    title: movie.title,
+    year: movie.year,
+    overview: movie.overview,
+  });
   return {
     title,
     description,
@@ -144,7 +158,7 @@ export default async function MoviePage({ params }: PageProps) {
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
       ...(movie.genres.length > 0
-        ? [{ '@type': 'ListItem', position: 2, name: movie.genres[0], item: `${siteUrl}/genre/${movie.genres[0].toLowerCase().replace(/\s+/g, '-')}` }]
+        ? [{ '@type': 'ListItem', position: 2, name: movie.genres[0], item: `${siteUrl}/genre/${genreSlug(movie.genres[0])}` }]
         : []),
       { '@type': 'ListItem', position: movie.genres.length > 0 ? 3 : 2, name: `${movie.title} (${movie.year})` },
     ],
@@ -350,7 +364,7 @@ export default async function MoviePage({ params }: PageProps) {
                   {movie.genres.map((genre) => (
                     <Link
                       key={genre}
-                      href={`/genre/${genre.toLowerCase().replace(/\s+/g, '-')}`}
+                      href={`/genre/${genreSlug(genre)}`}
                       className="px-4 py-2 rounded-full bg-card border border-border hover:border-primary/40 hover:text-primary text-sm font-medium text-muted-foreground transition-all"
                     >
                       {genre} Movies
@@ -362,6 +376,14 @@ export default async function MoviePage({ params }: PageProps) {
                   >
                     All Genres →
                   </Link>
+                  {movie.genres.some((g) => g.toLowerCase() === 'animation') && (
+                    <Link
+                      href="/animation"
+                      className="px-4 py-2 rounded-full bg-card border border-border hover:border-primary/40 hover:text-primary text-sm font-medium text-muted-foreground transition-all"
+                    >
+                      Animation &amp; Anime →
+                    </Link>
+                  )}
                 </div>
               </section>
             )}

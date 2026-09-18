@@ -6,6 +6,7 @@ import { getShowDetailsBySlug } from '@/lib/tvmaze';
 import { getTvGapFill } from '@/lib/tmdb-tv';
 import { MediaDetailBody } from '@/components/media-detail-body';
 import { MediaUnavailable } from '@/components/media-unavailable';
+import { buildMetaCopy } from '@/lib/media-classify';
 
 // Pre-generate a small batch of popular TV pages; the rest render on-demand.
 export async function generateStaticParams() {
@@ -35,8 +36,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   try {
     const show = await getShowDetailsBySlug(parsed.title, parsed.year);
     if (!show) return { title: 'TV Show' };
-    const title = `${show.title} (${show.year}) — TV Show Facts & Where to Watch`;
-    const description = `Discover ${show.title} (${show.year}): ${show.overview.slice(0, 120)}... Seasons, episodes, cast, and where to watch.`;
+    // An anime series reached via /tv should still read as anime; otherwise a
+    // regular TV series. Routed through the shared, type-adaptive copy builder.
+    const { title, description } = buildMetaCopy({
+      kind: show.isAnime ? 'anime-series' : 'tv',
+      title: show.title,
+      year: show.year,
+      overview: show.overview,
+    });
     return {
       title,
       description,

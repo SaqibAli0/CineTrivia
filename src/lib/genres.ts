@@ -54,6 +54,18 @@ export function getGenreBySlug(slug: string): GenreInfo | null {
 }
 
 /**
+ * Turn a human genre NAME into a `/genre/[slug]` slug. Single source of truth
+ * for the name→slug transform (previously inlined in the movie detail page).
+ * Prefers a known GENRES entry so canonical slugs (e.g. "Sci-Fi" → "sci-fi")
+ * win, then falls back to a lowercase/hyphenated form for unknown tags.
+ */
+export function genreSlug(name: string): string {
+  const known = GENRES.find((g) => g.name.toLowerCase() === name.toLowerCase());
+  if (known) return known.slug;
+  return name.toLowerCase().trim().replace(/\s+/g, '-');
+}
+
+/**
  * Fetch movies for a specific genre from TMDB.
  */
 export async function getMoviesByGenre(genreId: number, count: number = 20): Promise<GenreMovie[]> {
