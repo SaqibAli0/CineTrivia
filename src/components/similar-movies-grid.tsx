@@ -22,7 +22,7 @@ export function SimilarMoviesGrid({ movies }: SimilarMoviesGridProps) {
                 src={movie.posterUrl}
                 alt={`${movie.title} poster`}
                 fill
-                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                sizes="(max-width: 640px) 30vw, (max-width: 768px) 22vw, 180px"
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
               />
             ) : (

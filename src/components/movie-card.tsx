@@ -44,7 +44,7 @@ export function MovieCard({ movie }: MovieCardProps) {
             src={movie.posterUrl}
             alt={`Poster for ${movie.title}`}
             fill
-            sizes="(max-width: 640px) 50vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, (max-width: 1024px) 22vw, 200px"
             className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (

@@ -23,7 +23,7 @@ export function Footer() {
           <nav className="space-y-2 text-xs sm:text-sm text-muted-foreground" aria-label="Explore links">
             <Link href="/" className="block hover:text-foreground transition-colors">Movies</Link>
             <Link href="/tv" className="block hover:text-foreground transition-colors">TV Shows</Link>
-            <Link href="/animation" className="block hover:text-foreground transition-colors">Animation</Link>
+            <Link href="/animation" className="block hover:text-foreground transition-colors">Animation &amp; Anime</Link>
             <Link href="/genre" className="block hover:text-foreground transition-colors">Browse Genres</Link>
             <Link href="/blog" className="block hover:text-foreground transition-colors">Blog</Link>
           </nav>
@@ -65,7 +65,7 @@ export function Footer() {
       {/* Data attribution — TVmaze content is licensed CC BY-SA and requires
           visible attribution with a link. TMDB attribution kept alongside. */}
       <div className="pt-4 text-center sm:text-left">
-        <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
           TV &amp; animated-series data provided by{" "}
           <a
             href="https://www.tvmaze.com/"

@@ -113,9 +113,9 @@ export function MovieOfTheDay({ title, year, posterUrl, rating, genre, overview,
 
           {/* Title */}
           <Link href={`/movie/${slug}`} className="group">
-            <h3 className="font-headline text-2xl sm:text-3xl md:text-4xl text-foreground group-hover:text-primary transition-colors leading-tight">
+            <h2 className="font-headline text-2xl sm:text-3xl md:text-4xl text-foreground group-hover:text-primary transition-colors leading-tight">
               {movie.title}
-            </h3>
+            </h2>
             <span className="text-muted-foreground text-base sm:text-lg mt-1 inline-block">
               ({movie.year})
             </span>

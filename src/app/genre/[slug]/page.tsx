@@ -118,7 +118,7 @@ export default async function GenrePage({ params }: PageProps) {
                         src={movie.posterUrl}
                         alt={`${movie.title} (${movie.year}) poster`}
                         fill
-                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                        sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, (max-width: 1024px) 22vw, 180px"
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (

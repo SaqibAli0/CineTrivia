@@ -21,7 +21,7 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-6 text-sm">
           <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">Movies</Link>
           <Link href="/tv" className="text-muted-foreground hover:text-foreground transition-colors">TV Shows</Link>
-          <Link href="/animation" className="text-muted-foreground hover:text-foreground transition-colors">Animation</Link>
+          <Link href="/animation" className="text-muted-foreground hover:text-foreground transition-colors">Animation &amp; Anime</Link>
           <Link href="/genre" className="text-muted-foreground hover:text-foreground transition-colors">Genres</Link>
           <Link href="/blog" className="text-muted-foreground hover:text-foreground transition-colors">Blog</Link>
           <Link href="/about" className="text-muted-foreground hover:text-foreground transition-colors">About</Link>
@@ -51,7 +51,7 @@ export function Navbar() {
         <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-lg px-4 py-3 space-y-2">
           <Link href="/" onClick={() => setMobileOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Movies</Link>
           <Link href="/tv" onClick={() => setMobileOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">TV Shows</Link>
-          <Link href="/animation" onClick={() => setMobileOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Animation</Link>
+          <Link href="/animation" onClick={() => setMobileOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Animation &amp; Anime</Link>
           <Link href="/genre" onClick={() => setMobileOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Genres</Link>
           <Link href="/blog" onClick={() => setMobileOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Blog</Link>
           <Link href="/about" onClick={() => setMobileOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
